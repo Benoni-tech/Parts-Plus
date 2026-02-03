@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1016604643982",
+    "project_id": "parts-plus-8dd3f",
+    "storage_bucket": "parts-plus-8dd3f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1016604643982:android:e763e3226b858af2b52fdf",
+        "android_client_info": {
+          "package_name": "com.company.partsplus"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1016604643982-2sq5t30tprptenf2c4gpa4lvj9nn5k7i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAd9JA-5W8NEKUQ0xicpoj83eGoZiVq7wY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1016604643982-2sq5t30tprptenf2c4gpa4lvj9nn5k7i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1016604643982-j4ovli0m0jb7oqueeoea6a7tlp2iokv1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.company.partsplus"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

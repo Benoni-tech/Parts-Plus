@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "parts-plus",
+    "name": "Parts Plus",
     "slug": "parts-plus",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,12 +8,19 @@
     "scheme": "partsplus",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFD700"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.company.partsplus"
     },
     "android": {
+      "package": "com.company.partsplus",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFD700",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -33,16 +40,31 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#FFD700",
           "dark": {
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
+    },
+    "extra": {
+      "firebase": {
+        "apiKey": "AIzaSyCQYIJP-Q5G3aeRtMSVXpAf_8_HRSEN5Wo",
+        "authDomain": "parts-plus-8dd3f.firebaseapp.com",
+        "projectId": "parts-plus-8dd3f",
+        "storageBucket": "parts-plus-8dd3f.firebasestorage.app",
+        "messagingSenderId": "1016604643982",
+        "appId": "1:1016604643982:web:0e224c63845d7645b52fdf"
+      },
+      "eas": {
+        "projectId": "parts-plus-8dd3f"
+      }
     }
   }
 }
