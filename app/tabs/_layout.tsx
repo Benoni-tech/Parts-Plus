@@ -1,9 +1,9 @@
 // app/(tabs)/_layout.tsx
 
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../src/constants/colors';
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import React from "react";
+import { Colors } from "../../src/constants/colors";
 
 export default function TabsLayout() {
   return (
@@ -20,19 +20,20 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
         headerStyle: {
           backgroundColor: Colors.background,
         },
         headerTintColor: Colors.text.primary,
         headerShadowVisible: false,
+        headerShown: false, // ← Add this line to hide headers for all tabs
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -41,7 +42,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: "Profile",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

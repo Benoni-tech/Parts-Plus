@@ -1,8 +1,9 @@
 // src/types/auth.types.ts
 
-import { User as FirebaseUser } from 'firebase/auth';
+import { User as FirebaseUser } from "firebase/auth";
 
 export interface User {
+  reload(): unknown;
   uid: string;
   email: string | null;
   displayName: string | null;
@@ -35,4 +36,7 @@ export const mapFirebaseUser = (firebaseUser: FirebaseUser): User => ({
   photoURL: firebaseUser.photoURL,
   emailVerified: firebaseUser.emailVerified,
   createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
+  reload: function (): unknown {
+    throw new Error("Function not implemented.");
+  },
 });

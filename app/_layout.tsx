@@ -1,15 +1,15 @@
-// app/_layout.tsx
+// app/_layout.tsx - COMPLETE FIXED VERSION
 
-import React, { useEffect } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
-import { AuthProvider } from '../src/Contexts/authContexts';
-import { useAuth } from '../src/hooks/useAuth';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { Colors } from '../src/constants/colors';
+import { Slot, useRouter, useSegments } from "expo-router";
+import React, { useEffect } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Colors } from "../src/constants/colors";
+import { AuthProvider } from "../src/Contexts/authContexts";
+import { useAuth } from "../src/hooks/useAuth";
 
 function RootLayoutNav() {
   const { user, loading, initialized } = useAuth();
-  const segments = useSegments() as string[];  // Move this OUTSIDE useEffect
+  const segments = useSegments() as string[];
   const router = useRouter();
 
   useEffect(() => {
@@ -17,25 +17,34 @@ function RootLayoutNav() {
       return;
     }
 
-    const inAuthGroup = segments[0] === 'auth';
-    const inTabsGroup = segments[0] === '(tabs)';
+    const inAuthGroup = segments[0] === "auth";
+    const inTabsGroup = segments[0] === "(tabs)" || segments[0] === "tabs";
+    const inHymnDetail = segments[0] === "hymn";
+
+    console.log("Auth state:", {
+      user: user?.email,
+      emailVerified: user?.emailVerified,
+      segments,
+    });
 
     if (!user) {
-      // User is not signed in
-      if (!segments.includes('welcome') && 
-          !segments.includes('signup') && 
-          !segments.includes('signin')) {
-        router.replace('/welcome');
+      // User is not signed in - redirect to welcome
+      if (!inAuthGroup && segments[0] !== "welcome") {
+        router.replace("/welcome");
       }
-    } else if (!user.emailVerified) {
-      // User signed in but not verified - stay where they are
     } else {
-      // User is signed in and verified
-      if (!inTabsGroup) {
-        router.replace('/tabs');
+      // User is signed in
+      if (user.emailVerified) {
+        // Email is verified - allow navigation to hymn details or tabs
+        if (!inTabsGroup && !inHymnDetail && segments[0] !== "welcome") {
+          router.replace("/tabs");
+        }
+      } else {
+        // Email not verified - stay on current auth screen
+        console.log("User not verified yet");
       }
     }
-  }, [user, segments, initialized, loading]);
+  }, [user, user?.emailVerified, segments, initialized, loading]);
 
   if (!initialized || loading) {
     return (
@@ -59,8 +68,8 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: Colors.background,
   },
 });
