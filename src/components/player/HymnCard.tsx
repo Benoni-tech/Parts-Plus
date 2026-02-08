@@ -1,36 +1,98 @@
-// src/components/player/HymnCard.tsx - FIXED VERSION
+// src/components/player/HymnCard.tsx - WITH GRID & LIST VARIANTS
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from "react-native";
 import { FontSizes, Spacing } from "../../constants/colors";
 import { Hymn } from "../../types/hymn.types";
 
 interface HymnCardProps {
   hymn: Hymn;
+  variant?: "list" | "grid";
   onPress?: () => void;
 }
 
-export default function HymnCard({ hymn, onPress }: HymnCardProps) {
+export default function HymnCard({
+  hymn,
+  variant = "list",
+  onPress,
+}: HymnCardProps) {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const theme = {
+    card: isDark ? "#1A1A1A" : "#F5F5F5",
+    text: isDark ? "#FFFFFF" : "#000000",
+    textSecondary: isDark ? "#999999" : "#666666",
+  };
 
   const handlePress = () => {
     console.log("🎵 HymnCard pressed:", hymn.id, hymn.title);
-    console.log("🧭 Attempting navigation to:", `/hymn/${hymn.id}`);
 
     if (onPress) {
       onPress();
     } else {
-      // Navigate to hymn detail
       router.push(`/hymn/${hymn.id}`);
-      console.log("✅ router.push executed");
     }
   };
 
+  // GRID VARIANT (Compact Square Card)
+  if (variant === "grid") {
+    return (
+      <TouchableOpacity
+        style={styles.gridCard}
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
+        {/* Cover Image */}
+        <Image
+          source={{
+            uri:
+              hymn.coverImage ||
+              `https://via.placeholder.com/150/9B59B6/FFFFFF?text=${hymn.title[0] || "H"}`,
+          }}
+          style={styles.gridImage}
+        />
+
+        {/* Play Button Overlay */}
+        <View style={styles.gridPlayOverlay}>
+          <View style={styles.gridPlayButton}>
+            <Ionicons name="play" size={20} color="#FFF" />
+          </View>
+        </View>
+
+        {/* Info */}
+        <View style={styles.gridInfo}>
+          <Text
+            style={[styles.gridTitle, { color: theme.text }]}
+            numberOfLines={1}
+          >
+            {hymn.title}
+          </Text>
+          <Text
+            style={[styles.gridCategory, { color: theme.textSecondary }]}
+            numberOfLines={1}
+          >
+            {hymn.category}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  // LIST VARIANT (Horizontal Card - Original)
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.listCard, { backgroundColor: theme.card }]}
       onPress={handlePress}
       activeOpacity={0.7}
     >
@@ -39,16 +101,18 @@ export default function HymnCard({ hymn, onPress }: HymnCardProps) {
         source={{
           uri:
             hymn.coverImage ||
-            "https://via.placeholder.com/60/9B59B6/FFFFFF?text=" +
-              (hymn.title[0] || "H"),
+            `https://via.placeholder.com/60/9B59B6/FFFFFF?text=${hymn.title[0] || "H"}`,
         }}
-        style={styles.coverImage}
+        style={styles.listImage}
       />
 
       {/* Hymn Info */}
-      <View style={styles.info}>
+      <View style={styles.listInfo}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text
+            style={[styles.listTitle, { color: theme.text }]}
+            numberOfLines={1}
+          >
             {hymn.title}
           </Text>
           {hymn.number && (
@@ -58,33 +122,27 @@ export default function HymnCard({ hymn, onPress }: HymnCardProps) {
           )}
         </View>
 
-        <Text style={styles.composer} numberOfLines={1}>
+        <Text
+          style={[styles.listComposer, { color: theme.textSecondary }]}
+          numberOfLines={1}
+        >
           {hymn.composer}
         </Text>
 
-        {/* Tags */}
-        {hymn.tags && hymn.tags.length > 0 && (
-          <View style={styles.tags}>
-            {hymn.tags.slice(0, 2).map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-            {hymn.tags.length > 2 && (
-              <Text style={styles.moreText}>+{hymn.tags.length - 2}</Text>
-            )}
-          </View>
-        )}
+        {/* Category Badge */}
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryText}>{hymn.category}</Text>
+        </View>
       </View>
 
       {/* Action Buttons */}
-      <View style={styles.actions}>
+      <View style={styles.listActions}>
         <View style={styles.stats}>
           <Ionicons name="play-circle" size={14} color="#999" />
           <Text style={styles.playsText}>{hymn.plays || 0}</Text>
         </View>
 
-        <View style={styles.playButton}>
+        <View style={styles.listPlayButton}>
           <Ionicons name="play" size={18} color="#FFF" />
         </View>
       </View>
@@ -93,21 +151,65 @@ export default function HymnCard({ hymn, onPress }: HymnCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
+  // ===== GRID VARIANT STYLES =====
+  gridCard: {
+    width: 160,
+    marginRight: Spacing.md,
+  },
+  gridImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 12,
+    backgroundColor: "#2A2A2A",
+  },
+  gridPlayOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 12,
+  },
+  gridPlayButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(155, 89, 182, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gridInfo: {
+    marginTop: Spacing.sm,
+  },
+  gridTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  gridCategory: {
+    fontSize: FontSizes.sm,
+    textTransform: "capitalize",
+  },
+
+  // ===== LIST VARIANT STYLES =====
+  listCard: {
     flexDirection: "row",
-    backgroundColor: "#1A1A1A",
     borderRadius: 12,
     padding: Spacing.sm,
     marginBottom: Spacing.md,
     alignItems: "center",
     gap: Spacing.md,
   },
-  coverImage: {
+  listImage: {
     width: 60,
     height: 60,
     borderRadius: 8,
+    backgroundColor: "#2A2A2A",
   },
-  info: {
+  listInfo: {
     flex: 1,
   },
   titleRow: {
@@ -116,10 +218,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     gap: 8,
   },
-  title: {
+  listTitle: {
     fontSize: FontSizes.md,
     fontWeight: "700",
-    color: "#FFF",
     flex: 1,
   },
   numberBadge: {
@@ -133,31 +234,24 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#9B59B6",
   },
-  composer: {
+  listComposer: {
     fontSize: FontSizes.sm,
-    color: "#999",
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  tags: {
-    flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
-  },
-  tag: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  categoryBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(155, 89, 182, 0.15)",
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  tagText: {
+  categoryText: {
     fontSize: 11,
-    color: "#999",
+    color: "#9B59B6",
+    fontWeight: "600",
+    textTransform: "capitalize",
   },
-  moreText: {
-    fontSize: 11,
-    color: "#666",
-  },
-  actions: {
+  listActions: {
     alignItems: "flex-end",
     gap: 8,
   },
@@ -170,7 +264,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#999",
   },
-  playButton: {
+  listPlayButton: {
     width: 40,
     height: 40,
     borderRadius: 20,

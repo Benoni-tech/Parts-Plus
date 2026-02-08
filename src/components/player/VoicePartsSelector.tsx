@@ -1,15 +1,22 @@
-// src/components/hymns/VoicePartSelector.tsx
+// src/components/player/VoicePartSelector.tsx - REDESIGNED
 
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { FontSizes, Spacing } from "../../constants/colors";
-import { VoicePart } from "../../types/hymn.types";
+import { Hymn, VoicePart } from "../../types/hymn.types";
 
 interface VoicePartSelectorProps {
-  selectedPart: VoicePart;
+  hymn: Hymn;
   onSelectPart: (part: VoicePart) => void;
-  availableParts?: VoicePart[];
 }
 
 const VOICE_PARTS: {
@@ -25,62 +32,70 @@ const VOICE_PARTS: {
 ];
 
 export default function VoicePartSelector({
-  selectedPart,
+  hymn,
   onSelectPart,
-  availableParts = ["soprano", "alto", "tenor", "bass"],
 }: VoicePartSelectorProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select Voice Part</Text>
+      {/* Cover Image Background */}
+      <ImageBackground
+        source={{
+          uri:
+            hymn.coverImage || "https://via.placeholder.com/400/9B59B6/FFFFFF",
+        }}
+        style={styles.coverBackground}
+        blurRadius={10}
+      >
+        <LinearGradient
+          colors={["rgba(0,0,0,0.4)", "rgba(0,0,0,0.8)"]}
+          style={styles.coverGradient}
+        >
+          <Image
+            source={{
+              uri:
+                hymn.coverImage ||
+                `https://via.placeholder.com/200/9B59B6/FFFFFF?text=${hymn.title[0] || "H"}`,
+            }}
+            style={styles.coverImage}
+          />
+          <Text style={styles.playlistTitle}>{hymn.title}</Text>
+          <Text style={styles.playlistSubtitle}>By {hymn.composer}</Text>
+        </LinearGradient>
+      </ImageBackground>
 
-      <View style={styles.partsGrid}>
-        {VOICE_PARTS.filter((vp) => availableParts.includes(vp.part)).map(
-          ({ part, label, icon, color }) => {
-            const isSelected = selectedPart === part;
+      {/* Voice Parts List */}
+      <View style={styles.partsContainer}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Select Voice Part</Text>
+          <Text style={styles.headerCount}>{VOICE_PARTS.length} parts</Text>
+        </View>
 
-            return (
-              <TouchableOpacity
-                key={part}
-                style={[
-                  styles.partCard,
-                  isSelected && {
-                    ...styles.partCardSelected,
-                    borderColor: color,
-                  },
-                ]}
-                onPress={() => onSelectPart(part)}
+        {VOICE_PARTS.map(({ part, label, icon, color }, index) => (
+          <TouchableOpacity
+            key={part}
+            style={styles.partRow}
+            onPress={() => onSelectPart(part)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.partLeft}>
+              <View
+                style={[styles.partIcon, { backgroundColor: color + "20" }]}
               >
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: color + "20" },
-                  ]}
-                >
-                  <Ionicons
-                    name={icon as any}
-                    size={24}
-                    color={isSelected ? color : "#666"}
-                  />
-                </View>
-
-                <Text
-                  style={[
-                    styles.partLabel,
-                    isSelected && styles.partLabelSelected,
-                  ]}
-                >
-                  {label}
+                <Ionicons name={icon as any} size={24} color={color} />
+              </View>
+              <View style={styles.partInfo}>
+                <Text style={styles.partLabel}>{label}</Text>
+                <Text style={styles.partArtist}>
+                  {hymn.credits[part] || "Unknown"}
                 </Text>
+              </View>
+            </View>
 
-                {isSelected && (
-                  <View style={[styles.checkmark, { backgroundColor: color }]}>
-                    <Ionicons name="checkmark" size={14} color="#FFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          },
-        )}
+            <TouchableOpacity style={styles.playButton}>
+              <Ionicons name="play-circle" size={40} color={color} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
@@ -88,61 +103,101 @@ export default function VoicePartSelector({
 
 const styles = StyleSheet.create({
   container: {
-    padding: Spacing.lg,
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    marginVertical: Spacing.md,
-  },
-  title: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: Spacing.md,
-  },
-  partsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  partCard: {
     flex: 1,
-    minWidth: "45%",
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    padding: Spacing.md,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "transparent",
-    position: "relative",
   },
-  partCardSelected: {
-    backgroundColor: "#FFF",
-    borderWidth: 2,
+  coverBackground: {
+    width: "100%",
+    height: 350,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  coverGradient: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: Spacing.sm,
+    paddingTop: 60,
+  },
+  coverImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 16,
+    marginBottom: Spacing.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  playlistTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFF",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  playlistSubtitle: {
+    fontSize: FontSizes.sm,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+  },
+  partsContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    paddingTop: Spacing.lg,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  headerTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+  headerCount: {
+    fontSize: FontSizes.sm,
+    color: "#999",
+  },
+  partRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  partLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  partIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: Spacing.md,
+  },
+  partInfo: {
+    flex: 1,
   },
   partLabel: {
     fontSize: FontSizes.md,
     fontWeight: "600",
-    color: "#666",
+    color: "#FFF",
+    marginBottom: 2,
   },
-  partLabelSelected: {
-    color: "#333",
+  partArtist: {
+    fontSize: FontSizes.sm,
+    color: "#999",
   },
-  checkmark: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+  playButton: {
+    padding: 4,
   },
 });

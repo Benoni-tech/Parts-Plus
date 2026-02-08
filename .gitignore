@@ -31,7 +31,12 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+.env.local
+.env.development
+.env.production
+.env.test
 
 # typescript
 *.tsbuildinfo
@@ -41,3 +46,15 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Firebase & Sensitive Configuration Files
+src/config/firebase.ts
+firebase.ts
+firebaseConfig.ts
+google-services.json
+GoogleService-Info.plist
+
+# API Keys & Secrets
+*.secret
+secrets.json
+config/secrets.ts

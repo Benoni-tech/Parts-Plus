@@ -1,4 +1,4 @@
-// app/(tabs)/index.tsx - FIXED IMPORTS (player folder)
+// app/(tabs)/index.tsx - FULLY UPDATED WITH GRID & LIST LAYOUTS
 
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -180,7 +180,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Recently Added Section */}
+      {/* Recently Added Section - GRID LAYOUT */}
       {recentHymns.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -192,35 +192,43 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.hymnsList}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.gridScroll}
+          >
             {recentHymns.map((hymn) => (
-              <HymnCard key={hymn.id} hymn={hymn} />
+              <HymnCard key={hymn.id} hymn={hymn} variant="grid" />
             ))}
-          </View>
+          </ScrollView>
         </View>
       )}
 
-      {/* Popular Hymns Section */}
+      {/* Trending Now (Popular Hymns) - GRID LAYOUT */}
       {popularHymns.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Most Played
+              Trending Now
             </Text>
             <TouchableOpacity>
               <Text style={styles.seeAllText}>See all</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.hymnsList}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.gridScroll}
+          >
             {popularHymns.map((hymn) => (
-              <HymnCard key={hymn.id} hymn={hymn} />
+              <HymnCard key={hymn.id} hymn={hymn} variant="grid" />
             ))}
-          </View>
+          </ScrollView>
         </View>
       )}
 
-      {/* All Hymns Section */}
+      {/* All Hymns Section - LIST LAYOUT */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -266,7 +274,7 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.hymnsList}>
             {hymns.map((hymn) => (
-              <HymnCard key={hymn.id} hymn={hymn} />
+              <HymnCard key={hymn.id} hymn={hymn} variant="list" />
             ))}
           </View>
         )}
@@ -452,7 +460,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // Hymns List
+  // Grid Scroll (for Recently Added & Trending)
+  gridScroll: {
+    paddingHorizontal: Spacing.lg,
+  },
+
+  // Hymns List (for All Hymns)
   hymnsList: {
     paddingHorizontal: Spacing.lg,
   },

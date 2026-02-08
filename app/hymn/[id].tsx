@@ -1,35 +1,25 @@
-// app/hymn/[id].tsx - Single File Hymn Detail (CORRECTED IMPORTS)
+// app/hymn/[id].tsx - SPOTIFY STYLE
 
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
-import { FontSizes, Spacing } from "../../src/constants/colors";
-import { useHymn } from "../../src/hooks/useHymns";
+import FullScreenPlayer from "../../src/components/player/FullScreenPlayer";
+import { useHymn, useHymns } from "../../src/hooks/useHymns";
 import { VoicePart } from "../../src/types/hymn.types";
-// CORRECTED IMPORTS - from player folder
-import AudioPlayer from "../../src/components/player/AudioPlayer";
-import VoicePartSelector from "../../src/components/player/VoicePartsSelector";
-
-console.log("📄 HymnDetailScreen file loaded");
 
 export default function HymnDetailScreen() {
-  console.log("🚀 HymnDetailScreen component rendering");
-
-  console.log("🚀 HymnDetailScreen component rendering");
-
-  const { id } = useLocalSearchParams(); // ← ONLY ONCE!
-  console.log("🆔 Hymn ID from params:", id);
+  const { id } = useLocalSearchParams();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -37,14 +27,22 @@ export default function HymnDetailScreen() {
   const { hymn, loading, error } = useHymn(id as string);
   const [selectedVoicePart, setSelectedVoicePart] =
     useState<VoicePart>("soprano");
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [showCredits, setShowCredits] = useState(false);
+  const [showFullPlayer, setShowFullPlayer] = useState(false);
+
+  // Get related songs based on tags
+  const relatedFilter = hymn?.tags?.length
+    ? { tags: [hymn.tags[0]] }
+    : { category: hymn?.category };
+  const { hymns: relatedHymns } = useHymns(relatedFilter);
+  const relatedSongs = relatedHymns
+    .filter((h) => h.id !== hymn?.id)
+    .slice(0, 4);
 
   const theme = {
-    background: isDark ? "#0A0A0A" : "#FFFFFF",
-    card: isDark ? "#1A1A1A" : "#F5F5F5",
+    background: isDark ? "#121212" : "#FFFFFF",
+    card: isDark ? "#1E1E1E" : "#F5F5F5",
     text: isDark ? "#FFFFFF" : "#000000",
-    textSecondary: isDark ? "#999999" : "#666666",
+    textSecondary: isDark ? "#B3B3B3" : "#666666",
   };
 
   if (loading) {
@@ -53,9 +51,6 @@ export default function HymnDetailScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#9B59B6" />
-          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-            Loading hymn...
-          </Text>
         </View>
       </View>
     );
@@ -79,160 +74,69 @@ export default function HymnDetailScreen() {
     );
   }
 
-  // CREDITS VIEW
-  if (showCredits) {
-    const VOICE_PART_ICONS: Record<string, { icon: string; color: string }> = {
-      soprano: { icon: "woman", color: "#FF6B6B" },
-      alto: { icon: "musical-note", color: "#4ECDC4" },
-      tenor: { icon: "man", color: "#FFD93D" },
-      bass: { icon: "musical-notes", color: "#A78BFA" },
-      pianist: { icon: "piano", color: "#9B59B6" },
-    };
+  const voiceParts = [
+    {
+      part: "soprano",
+      name: "Soprano",
+      singer: hymn.credits.soprano,
+      icon: "woman",
+      color: "#FF6B6B",
+    },
+    {
+      part: "alto",
+      name: "Alto",
+      singer: hymn.credits.alto,
+      icon: "musical-note",
+      color: "#4ECDC4",
+    },
+    {
+      part: "tenor",
+      name: "Tenor",
+      singer: hymn.credits.tenor,
+      icon: "man",
+      color: "#FFD93D",
+    },
+    {
+      part: "bass",
+      name: "Bass",
+      singer: hymn.credits.bass,
+      icon: "musical-notes",
+      color: "#A78BFA",
+    },
+  ];
 
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Stack.Screen options={{ headerShown: false }} />
-
-        {/* Credits Header */}
-        <View style={[styles.creditsHeader, { backgroundColor: "#9B59B6" }]}>
-          <TouchableOpacity
-            onPress={() => setShowCredits(false)}
-            style={styles.headerButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Credits</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Song Info */}
-          <View style={styles.songInfo}>
-            <Text style={[styles.title, { color: theme.text }]}>
-              {hymn.title}
-            </Text>
-            {hymn.number && (
-              <Text style={[styles.songNumber, { color: theme.textSecondary }]}>
-                Hymn #{hymn.number}
-              </Text>
-            )}
-          </View>
-
-          {/* Composer */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="create" size={20} color="#9B59B6" />
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Composition
-              </Text>
-            </View>
-            <View style={[styles.card, { backgroundColor: theme.card }]}>
-              <View style={styles.creditRow}>
-                <Text
-                  style={[styles.creditLabel, { color: theme.textSecondary }]}
-                >
-                  Composed by
-                </Text>
-                <Text style={[styles.creditValue, { color: theme.text }]}>
-                  {hymn.composer}
-                </Text>
-              </View>
-              {hymn.yearWritten && (
-                <View style={styles.creditRow}>
-                  <Text
-                    style={[styles.creditLabel, { color: theme.textSecondary }]}
-                  >
-                    Year Written
-                  </Text>
-                  <Text style={[styles.creditValue, { color: theme.text }]}>
-                    {hymn.yearWritten}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Performers */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="people" size={20} color="#9B59B6" />
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Performers
-              </Text>
-            </View>
-            <View style={[styles.card, { backgroundColor: theme.card }]}>
-              {Object.entries(hymn.credits).map(([role, name]) => {
-                const iconData =
-                  VOICE_PART_ICONS[role] || VOICE_PART_ICONS.pianist;
-                return (
-                  <View key={role} style={styles.performerRow}>
-                    <View
-                      style={[
-                        styles.performerIcon,
-                        { backgroundColor: iconData.color + "20" },
-                      ]}
-                    >
-                      <Ionicons
-                        name={iconData.icon as any}
-                        size={24}
-                        color={iconData.color}
-                      />
-                    </View>
-                    <View style={styles.performerInfo}>
-                      <Text
-                        style={[
-                          styles.performerRole,
-                          { color: theme.textSecondary },
-                        ]}
-                      >
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                      </Text>
-                      <Text
-                        style={[styles.performerName, { color: theme.text }]}
-                      >
-                        {name}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-
-          <View style={{ height: 40 }} />
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // MAIN DETAIL VIEW
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header with Gradient */}
-      <LinearGradient
-        colors={["#9B59B6", "#7C3AED"]}
-        style={styles.headerGradient}
-      >
-        <View style={styles.headerTop}>
+      {/* Header with Cover Image Background */}
+      <View style={styles.header}>
+        {/* Blurred Background */}
+        <Image
+          source={{
+            uri:
+              hymn.coverImage ||
+              `https://via.placeholder.com/400/9B59B6/FFFFFF?text=${hymn.title[0]}`,
+          }}
+          style={styles.headerBackground}
+          blurRadius={50}
+        />
+        <View style={styles.headerOverlay} />
+
+        {/* Header Buttons */}
+        <View style={styles.headerButtons}>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={styles.headerButton}
+            style={styles.iconButton}
           >
             <Ionicons name="arrow-back" size={24} color="#FFF" />
           </TouchableOpacity>
-
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="share-outline" size={24} color="#FFF" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="heart-outline" size={24} color="#FFF" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#FFF" />
+          </TouchableOpacity>
         </View>
 
+        {/* Cover Image */}
         <View style={styles.coverContainer}>
           <Image
             source={{
@@ -243,112 +147,158 @@ export default function HymnDetailScreen() {
             style={styles.coverImage}
           />
         </View>
-      </LinearGradient>
+
+        {/* Title and Badge */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{hymn.title}</Text>
+          {hymn.number && (
+            <View style={styles.numberBadge}>
+              <Text style={styles.badgeText}>#{hymn.number}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Description */}
+        <Text style={styles.description}>
+          Composed by {hymn.composer} • {hymn.yearWritten || "Traditional"}
+        </Text>
+      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Hymn Info */}
-        <View style={styles.infoSection}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: theme.text }]}>
-              {hymn.title}
-            </Text>
-            {hymn.number && (
-              <View style={styles.numberBadge}>
-                <Text style={styles.numberText}>#{hymn.number}</Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={[styles.composer, { color: theme.textSecondary }]}>
-            Composed by {hymn.composer}
+        {/* Harmony Parts Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Harmony Parts
           </Text>
 
-          {hymn.yearWritten && (
-            <Text style={[styles.year, { color: theme.textSecondary }]}>
-              {hymn.yearWritten}
-            </Text>
-          )}
-
-          {/* Stats */}
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Ionicons name="play-circle" size={20} color="#9B59B6" />
-              <Text style={[styles.statText, { color: theme.textSecondary }]}>
-                {hymn.plays || 0} plays
-              </Text>
-            </View>
-            <View style={styles.stat}>
-              <Ionicons name="musical-notes" size={20} color="#9B59B6" />
-              <Text style={[styles.statText, { color: theme.textSecondary }]}>
-                {hymn.category}
-              </Text>
-            </View>
-          </View>
-
-          {/* Tags */}
-          {hymn.tags && hymn.tags.length > 0 && (
-            <View style={styles.tags}>
-              {hymn.tags.map((tag, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
+          {voiceParts.map((vp, index) => (
+            <TouchableOpacity
+              key={vp.part}
+              style={[styles.partRow, { borderBottomColor: theme.card }]}
+              onPress={() => {
+                setSelectedVoicePart(vp.part as VoicePart);
+                setShowFullPlayer(true);
+              }}
+            >
+              <View style={styles.partLeft}>
+                {/* Part Icon */}
+                <View
+                  style={[
+                    styles.partIcon,
+                    { backgroundColor: vp.color + "20" },
+                  ]}
+                >
+                  <Ionicons name={vp.icon as any} size={24} color={vp.color} />
                 </View>
-              ))}
-            </View>
+
+                {/* Part Info */}
+                <View style={styles.partInfo}>
+                  <Text style={[styles.partName, { color: theme.text }]}>
+                    {vp.name}
+                  </Text>
+                  <Text
+                    style={[styles.partCredit, { color: theme.textSecondary }]}
+                  >
+                    Credit: {vp.singer}
+                  </Text>
+                </View>
+              </View>
+
+              {/* More Button */}
+              <TouchableOpacity>
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Related Songs Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Related Songs
+            </Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {relatedSongs.length > 0 ? (
+            relatedSongs.map((song, index) => (
+              <View key={song.id} style={styles.relatedSongRow}>
+                <View style={styles.relatedLeft}>
+                  <Text
+                    style={[
+                      styles.relatedNumber,
+                      { color: theme.textSecondary },
+                    ]}
+                  >
+                    {index + 1}
+                  </Text>
+                  <Image
+                    source={{
+                      uri:
+                        song.coverImage ||
+                        `https://via.placeholder.com/50/9B59B6/FFFFFF?text=${song.title[0]}`,
+                    }}
+                    style={styles.relatedCover}
+                  />
+                  <View style={styles.relatedInfo}>
+                    <Text
+                      style={[styles.relatedTitle, { color: theme.text }]}
+                      numberOfLines={1}
+                    >
+                      {song.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.relatedComposer,
+                        { color: theme.textSecondary },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {song.composer}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => router.push(`/hymn/${song.id}`)}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <Text style={[styles.noRelated, { color: theme.textSecondary }]}>
+              No related songs found
+            </Text>
           )}
         </View>
-
-        {/* Voice Part Selector */}
-        <VoicePartSelector
-          selectedPart={selectedVoicePart}
-          onSelectPart={setSelectedVoicePart}
-        />
-
-        {/* Audio Player */}
-        <AudioPlayer hymn={hymn} voicePart={selectedVoicePart} />
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.card }]}
-            onPress={() => setShowCredits(true)}
-          >
-            <Ionicons name="people" size={24} color="#9B59B6" />
-            <Text style={[styles.actionButtonText, { color: theme.text }]}>
-              View Credits
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.card }]}
-            onPress={() => setShowLyrics(!showLyrics)}
-          >
-            <Ionicons
-              name={showLyrics ? "document-text" : "document-text-outline"}
-              size={24}
-              color="#9B59B6"
-            />
-            <Text style={[styles.actionButtonText, { color: theme.text }]}>
-              {showLyrics ? "Hide" : "Show"} Lyrics
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Lyrics */}
-        {showLyrics && hymn.lyrics && (
-          <View
-            style={[styles.lyricsContainer, { backgroundColor: theme.card }]}
-          >
-            <Text style={[styles.lyricsTitle, { color: theme.text }]}>
-              Lyrics
-            </Text>
-            <Text style={[styles.lyrics, { color: theme.textSecondary }]}>
-              {hymn.lyrics}
-            </Text>
-          </View>
-        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Full Screen Player Modal */}
+      <Modal
+        visible={showFullPlayer}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <FullScreenPlayer
+          hymn={hymn}
+          voicePart={selectedVoicePart}
+          onClose={() => setShowFullPlayer(false)}
+        />
+      </Modal>
     </View>
   );
 }
@@ -358,265 +308,207 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Header Gradient
-  headerGradient: {
-    paddingTop: 60,
-    paddingBottom: 40,
+  // Header with Cover
+  header: {
+    height: 400,
+    position: "relative",
   },
-  headerTop: {
+  headerBackground: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  headerButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    zIndex: 10,
   },
-  headerButton: {
+  iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
-  headerActions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
   coverContainer: {
     alignItems: "center",
+    marginTop: 20,
   },
   coverImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 16,
+    width: 180,
+    height: 180,
+    borderRadius: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFF",
+    textAlign: "center",
+  },
+  numberBadge: {
+    backgroundColor: "#9B59B6",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+  description: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.7)",
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 20,
   },
 
   // Content
   content: {
     flex: 1,
   },
-  infoSection: {
-    padding: Spacing.lg,
+
+  // Section
+  section: {
+    marginTop: 24,
+    paddingHorizontal: 16,
   },
-  titleRow: {
+  sectionHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.sm,
-    gap: Spacing.sm,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 28,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: "700",
-    flex: 1,
   },
-  numberBadge: {
-    backgroundColor: "rgba(155, 89, 182, 0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  numberText: {
+  viewAll: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#9B59B6",
-  },
-  composer: {
-    fontSize: FontSizes.lg,
-    marginBottom: 4,
-  },
-  year: {
-    fontSize: FontSizes.sm,
-    marginBottom: Spacing.md,
-  },
-  stats: {
-    flexDirection: "row",
-    gap: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  stat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  statText: {
-    fontSize: FontSizes.sm,
-  },
-  tags: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: Spacing.sm,
-  },
-  tag: {
-    backgroundColor: "rgba(155, 89, 182, 0.1)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  tagText: {
-    fontSize: 12,
     color: "#9B59B6",
     fontWeight: "600",
   },
 
-  // Action Buttons
-  actionButtons: {
+  // Harmony Parts
+  partRow: {
     flexDirection: "row",
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  actionButton: {
+  partLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
+    gap: 12,
+  },
+  partIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  partInfo: {
+    flex: 1,
+  },
+  partName: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  partCredit: {
+    fontSize: 13,
+  },
+
+  // Related Songs
+  relatedSongRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  relatedLeft: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.md,
-    borderRadius: 12,
-    gap: 8,
+    flex: 1,
+    gap: 12,
   },
-  actionButtonText: {
-    fontSize: FontSizes.md,
+  relatedNumber: {
+    fontSize: 16,
     fontWeight: "600",
+    width: 20,
+  },
+  relatedCover: {
+    width: 50,
+    height: 50,
+    borderRadius: 4,
+  },
+  relatedInfo: {
+    flex: 1,
+  },
+  relatedTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  relatedComposer: {
+    fontSize: 13,
+  },
+  noRelated: {
+    fontSize: 14,
+    textAlign: "center",
+    paddingVertical: 20,
   },
 
-  // Lyrics
-  lyricsContainer: {
-    margin: Spacing.lg,
-    padding: Spacing.lg,
-    borderRadius: 16,
-  },
-  lyricsTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    marginBottom: Spacing.md,
-  },
-  lyrics: {
-    fontSize: FontSizes.md,
-    lineHeight: 24,
-  },
-
-  // Loading
+  // Loading & Error
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  loadingText: {
-    marginTop: Spacing.md,
-    fontSize: FontSizes.md,
-  },
-
-  // Error
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.xl,
+    padding: 20,
   },
   errorText: {
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-    fontSize: FontSizes.md,
+    marginTop: 16,
+    fontSize: 16,
     color: "#FF6B6B",
     textAlign: "center",
   },
   backButton: {
+    marginTop: 20,
     backgroundColor: "#9B59B6",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 8,
   },
   backButtonText: {
     color: "#FFF",
-    fontWeight: "700",
-  },
-
-  // Credits View
-  creditsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: Spacing.lg,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFF",
-  },
-  songInfo: {
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(155, 89, 182, 0.1)",
-  },
-  songNumber: {
-    fontSize: FontSizes.sm,
-    marginTop: 4,
-  },
-  section: {
-    marginTop: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.md,
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-  },
-  card: {
-    borderRadius: 16,
-    padding: Spacing.md,
-  },
-  creditRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.05)",
-  },
-  creditLabel: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-  },
-  creditValue: {
-    fontSize: FontSizes.sm,
-    fontWeight: "700",
-  },
-  performerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.05)",
-    gap: Spacing.md,
-  },
-  performerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  performerInfo: {
-    flex: 1,
-  },
-  performerRole: {
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  performerName: {
-    fontSize: FontSizes.md,
     fontWeight: "700",
   },
 });
