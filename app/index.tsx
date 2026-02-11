@@ -1,19 +1,16 @@
-import { useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { Animated, Image, StyleSheet, Text, View } from "react-native";
 
 export default function Index() {
-  const router = useRouter();
   const progress = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
+  // Animate progress bar only (no navigation here)
+  React.useEffect(() => {
     Animated.timing(progress, {
       toValue: 120,
-      duration: 3000,
+      duration: 5000,
       useNativeDriver: false,
-    }).start(() => {
-      router.replace("/welcome");
-    });
+    }).start();
   }, []);
 
   return (

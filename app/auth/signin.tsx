@@ -1,32 +1,37 @@
 // app/signin.tsx
 
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useAuth } from '../../src/hooks/useAuth';
-import { signInSchema, SignInFormData } from '../../src/schemas/authSchemas';
-import { Colors, Spacing, FontSizes, BorderRadius } from '../../src/constants/colors';
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
+} from "../../src/constants/colors";
+import { useAuth } from "../../src/hooks/useAuth";
+import { SignInFormData, signInSchema } from "../../src/schemas/authSchemas";
 
 export default function SignInScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
 
   const [formData, setFormData] = useState<SignInFormData>({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const [errors, setErrors] = useState<Partial<SignInFormData>>({});
@@ -64,7 +69,7 @@ export default function SignInScreen() {
       await signIn(formData.email, formData.password);
       // Navigation will be handled by the auth state change
     } catch (error: any) {
-      Alert.alert('Sign In Failed', error.message);
+      Alert.alert("Sign In Failed", error.message);
     } finally {
       setLoading(false);
     }
@@ -72,11 +77,11 @@ export default function SignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <StatusBar style="dark" />
-      
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -90,7 +95,7 @@ export default function SignInScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={Colors.secondary} />
           </TouchableOpacity>
-          
+
           <View style={styles.headerTextContainer}>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>
@@ -104,7 +109,9 @@ export default function SignInScreen() {
           {/* Email Input */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
-            <View style={[styles.inputWrapper, errors.email && styles.inputError]}>
+            <View
+              style={[styles.inputWrapper, errors.email && styles.inputError]}
+            >
               <Ionicons
                 name="mail-outline"
                 size={20}
@@ -132,7 +139,12 @@ export default function SignInScreen() {
           {/* Password Input */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
-            <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.password && styles.inputError,
+              ]}
+            >
               <Ionicons
                 name="lock-closed-outline"
                 size={20}
@@ -155,7 +167,7 @@ export default function SignInScreen() {
                 style={styles.eyeIcon}
               >
                 <Ionicons
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
                   size={20}
                   color={Colors.text.secondary}
                 />
@@ -169,7 +181,7 @@ export default function SignInScreen() {
           {/* Forgot Password Link */}
           <TouchableOpacity
             style={styles.forgotPasswordContainer}
-            onPress={() => router.push('/auth/forgot-password')}
+            onPress={() => router.push("/auth/forgot-password")}
           >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
@@ -191,7 +203,7 @@ export default function SignInScreen() {
           {/* Sign Up Link */}
           <View style={styles.signUpContainer}>
             <Text style={styles.signUpText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/signup')}>
+            <TouchableOpacity onPress={() => router.push("/auth/signup")}>
               <Text style={styles.signUpLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -219,8 +231,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.inputBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: Spacing.lg,
   },
   headerTextContainer: {
@@ -228,7 +240,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSizes.xxxl,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.text.primary,
     marginBottom: Spacing.sm,
   },
@@ -246,13 +258,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FontSizes.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.text.primary,
     marginBottom: Spacing.sm,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.inputBackground,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
@@ -281,19 +293,19 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.xs,
   },
   forgotPasswordContainer: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginBottom: Spacing.lg,
   },
   forgotPasswordText: {
     fontSize: FontSizes.sm,
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   signInButton: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Spacing.lg,
     elevation: 2,
     shadowColor: Colors.secondary,
@@ -309,13 +321,13 @@ const styles = StyleSheet.create({
   },
   signInButtonText: {
     fontSize: FontSizes.lg,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.secondary,
   },
   signUpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: Spacing.xl,
   },
   signUpText: {
@@ -325,6 +337,6 @@ const styles = StyleSheet.create({
   signUpLink: {
     fontSize: FontSizes.md,
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

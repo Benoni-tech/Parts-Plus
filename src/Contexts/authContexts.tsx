@@ -1,13 +1,15 @@
-// src/contexts/AuthContext.tsx
+// src/contexts/AuthContext.tsx - WITH USERDATA
 
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import React, { createContext, ReactNode, useEffect, useState } from "react";
-import { auth } from "../../Config/firebase";
+import { auth, db } from "../../Config/firebase";
 import authService from "../services/authServices";
 import {
   AuthContextType,
   AuthState,
   mapFirebaseUser,
+  UserData,
 } from "../types/auth.types";
 
 // Create the context
@@ -31,12 +33,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initialized: false,
   });
 
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  /**
+   * Fetch user data from Firestore
+   */
+  const fetchUserData = async (uid: string): Promise<UserData | null> => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        return userDoc.data() as UserData;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      return null;
+    }
+  };
+
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
-      (firebaseUser) => {
+      async (firebaseUser) => {
+        console.log(
+          "🔄 Auth state changed:",
+          firebaseUser?.email,
+          "Verified:",
+          firebaseUser?.emailVerified,
+        );
+
         if (firebaseUser) {
+          // Fetch user data from Firestore
+          const data = await fetchUserData(firebaseUser.uid);
+          setUserData(data);
+
           setState({
             user: mapFirebaseUser(firebaseUser),
             loading: false,
@@ -44,6 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             initialized: true,
           });
         } else {
+          setUserData(null);
           setState({
             user: null,
             loading: false,
@@ -73,9 +105,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signUp = async (email: string, password: string): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
+      console.log("📝 Creating user account...");
       await authService.createUser(email, password);
+      console.log("✅ User account created");
       // State will be updated by onAuthStateChanged
     } catch (error: any) {
+      console.error("❌ Signup error:", error);
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -96,6 +131,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Reload the user to get fresh emailVerified status
       if (auth.currentUser) {
         await auth.currentUser.reload();
+        console.log(
+          "✅ User signed in, verified:",
+          auth.currentUser.emailVerified,
+        );
       }
 
       // State will be updated by onAuthStateChanged
@@ -116,6 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       await authService.signOut();
+      console.log("✅ User signed out");
       // State will be updated by onAuthStateChanged
     } catch (error: any) {
       setState((prev) => ({
@@ -132,8 +172,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const sendEmailVerification = async (): Promise<void> => {
     try {
+      console.log("📧 Sending verification email...");
       await authService.sendEmailVerification();
+      console.log("✅ Verification email sent");
     } catch (error: any) {
+      console.error("❌ Error sending verification:", error);
       setState((prev) => ({ ...prev, error: error.message }));
       throw error;
     }
@@ -145,6 +188,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkEmailVerified = async (): Promise<boolean> => {
     try {
       const isVerified = await authService.checkEmailVerified();
+      console.log("🔍 Email verification check:", isVerified);
 
       // Update user state if verified
       if (isVerified && auth.currentUser) {
@@ -186,10 +230,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (auth.currentUser) {
         await auth.currentUser.reload();
+        const data = await fetchUserData(auth.currentUser.uid);
+        setUserData(data);
         setState((prev) => ({
           ...prev,
           user: mapFirebaseUser(auth.currentUser!),
         }));
+        console.log("🔄 User data refreshed");
       }
     } catch (error: any) {
       console.error("Error refreshing user:", error);
@@ -198,6 +245,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     ...state,
+    userData, // Add userData to context
     signUp,
     signIn,
     signOut,

@@ -1,7 +1,5 @@
-// app/_layout.tsx - COMPLETE FIXED VERSION
-
 import { Slot, useRouter, useSegments } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Colors } from "../src/constants/colors";
 import { AuthProvider } from "../src/Contexts/authContexts";
@@ -11,42 +9,51 @@ function RootLayoutNav() {
   const { user, loading, initialized } = useAuth();
   const segments = useSegments() as string[];
   const router = useRouter();
+  const [splashDone, setSplashDone] = useState(false);
+
+  // Start splash timer
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashDone(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (!initialized || loading) {
-      return;
-    }
+    if (!initialized || loading || !splashDone) return;
 
     const inAuthGroup = segments[0] === "auth";
     const inTabsGroup = segments[0] === "(tabs)" || segments[0] === "tabs";
     const inHymnDetail = segments[0] === "hymn";
+    const inWelcome = segments[0] === "welcome";
+    const inRoot = segments.length === 0;
 
     console.log("Auth state:", {
       user: user?.email,
       emailVerified: user?.emailVerified,
       segments,
+      inRoot,
     });
 
     if (!user) {
-      // User is not signed in - redirect to welcome
-      if (!inAuthGroup && segments[0] !== "welcome") {
+      if (!inWelcome && !inAuthGroup) {
+        console.log("📍 Navigating to welcome (no user)");
         router.replace("/welcome");
       }
     } else {
-      // User is signed in
       if (user.emailVerified) {
-        // Email is verified - allow navigation to hymn details or tabs
-        if (!inTabsGroup && !inHymnDetail && segments[0] !== "welcome") {
+        if (!inTabsGroup && !inHymnDetail) {
+          console.log("📍 Navigating to tabs (verified user)");
           router.replace("/tabs");
         }
       } else {
-        // Email not verified - stay on current auth screen
-        console.log("User not verified yet");
+        if (!inAuthGroup || segments[1] !== "verify-email") {
+          console.log("📍 Navigating to verify-email (unverified user)");
+          router.replace("/auth/verify-email");
+        }
       }
     }
-  }, [user, user?.emailVerified, segments, initialized, loading]);
+  }, [user, user?.emailVerified, segments, initialized, loading, splashDone]);
 
-  if (!initialized || loading) {
+  if (!initialized || !splashDone) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />

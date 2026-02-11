@@ -1,28 +1,46 @@
-// app/verification-success.tsx
+// app/verification-success.tsx - UPDATED TO REDIRECT PROPERLY
 
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect } from "react";
 import {
   Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInUp, ZoomIn } from 'react-native-reanimated';
-import { BorderRadius, Colors, FontSizes, Spacing } from '../../src/constants/colors';
+} from "react-native";
+import Animated, { FadeIn, FadeInUp, ZoomIn } from "react-native-reanimated";
+import {
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
+} from "../../src/constants/colors";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function VerificationSuccessScreen() {
   const router = useRouter();
 
+  // Auto-redirect after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace("/tabs");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleGoHome = () => {
+    router.replace("/tabs");
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" />
-      
+      <StatusBar style="light" />
+
       <Animated.View entering={FadeIn.duration(800)} style={styles.content}>
         {/* Success Icon */}
         <Animated.View
@@ -52,7 +70,7 @@ export default function VerificationSuccessScreen() {
           style={styles.message}
         >
           Your email has been successfully verified. You can now access all
-          features of Parts Plus and start streaming your favorite hymns.
+          features and start streaming your favorite hymns.
         </Animated.Text>
 
         {/* Success Details */}
@@ -85,7 +103,7 @@ export default function VerificationSuccessScreen() {
         >
           <TouchableOpacity
             style={styles.homeButton}
-            onPress={() => router.replace('/tabs')}
+            onPress={handleGoHome}
             activeOpacity={0.8}
           >
             <Text style={styles.homeButtonText}>Go to Home</Text>
@@ -93,10 +111,14 @@ export default function VerificationSuccessScreen() {
               <Ionicons
                 name="arrow-forward"
                 size={20}
-                color={Colors.text.white}
+                color={Colors.text.primary}
               />
             </View>
           </TouchableOpacity>
+
+          <Text style={styles.autoRedirectText}>
+            Redirecting automatically in 3 seconds...
+          </Text>
         </Animated.View>
       </Animated.View>
     </View>
@@ -106,12 +128,12 @@ export default function VerificationSuccessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#121212",
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: Spacing.xl,
   },
   iconContainer: {
@@ -120,47 +142,49 @@ const styles = StyleSheet.create({
   checkmarkCircle: {
     width: 140,
     height: 140,
-    borderRadius: BorderRadius.full,
-    backgroundColor: `${Colors.success}10`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 70,
+    backgroundColor: `${Colors.success}15`,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
-    fontSize: FontSizes.xxxl,
-    fontWeight: 'bold',
-    color: Colors.text.primary,
+    fontSize: 32,
+    fontWeight: "bold",
+    color: Colors.text.white,
     marginBottom: Spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   message: {
     fontSize: FontSizes.md,
-    color: Colors.text.secondary,
-    textAlign: 'center',
+    color: Colors.text.light,
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: Spacing.xl,
     paddingHorizontal: Spacing.md,
   },
   detailsContainer: {
-    backgroundColor: Colors.inputBackground,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
     marginBottom: Spacing.xxl,
-    width: '100%',
+    width: "100%",
     maxWidth: 320,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: Spacing.sm,
   },
   detailText: {
     fontSize: FontSizes.md,
-    color: Colors.text.primary,
+    color: Colors.text.white,
     marginLeft: Spacing.md,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   buttonContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 320,
   },
   homeButton: {
@@ -168,30 +192,29 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingVertical: 18,
     paddingHorizontal: Spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    elevation: 3,
-    shadowColor: Colors.secondary,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   homeButtonText: {
     fontSize: FontSizes.lg,
-    color: Colors.secondary,
-    fontWeight: '600',
+    color: Colors.text.primary,
+    fontWeight: "600",
     flex: 1,
   },
   arrowCircle: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  autoRedirectText: {
+    fontSize: FontSizes.sm,
+    color: Colors.text.light,
+    textAlign: "center",
+    marginTop: Spacing.md,
+    fontStyle: "italic",
   },
 });

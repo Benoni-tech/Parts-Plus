@@ -1,22 +1,26 @@
 // app/welcome.tsx
 
-import React from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import React from "react";
 import {
-  View,
-  Text,
-  ImageBackground,
-  StyleSheet,
-  TouchableOpacity,
   Dimensions,
+  ImageBackground,
   StatusBar,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, BorderRadius } from '../src/constants/colors';
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
+} from "../src/constants/colors";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -24,9 +28,9 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       <ImageBackground
-        source={require('../assets/images/back.jpg')}
+        source={require("../assets/images/back.jpg")}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
@@ -37,7 +41,7 @@ export default function WelcomeScreen() {
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('../assets/images/logo.png')}
+              source={require("../assets/images/logo.png")}
               style={styles.logo}
               contentFit="contain"
             />
@@ -51,7 +55,8 @@ export default function WelcomeScreen() {
 
           {/* Subtitle */}
           <Text style={styles.subtitle}>
-            Stream the favorite parts of your favorite hymns, choruses effortlessly.
+            Stream the favorite parts of your favorite hymns, choruses
+            effortlessly.
           </Text>
 
           {/* Spacer */}
@@ -60,19 +65,23 @@ export default function WelcomeScreen() {
           {/* Get Started Button */}
           <TouchableOpacity
             style={styles.getStartedButton}
-            onPress={() => router.push('/auth/signup')}
+            onPress={() => router.push("/auth/signup")}
             activeOpacity={0.8}
           >
             <Text style={styles.getStartedText}>Get Started</Text>
             <View style={styles.arrowCircle}>
-              <Ionicons name="arrow-forward" size={20} color={Colors.text.white} />
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={Colors.text.white}
+              />
             </View>
           </TouchableOpacity>
 
           {/* Login Link */}
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/signin')}>
+            <TouchableOpacity onPress={() => router.push("/auth/signin")}>
               <Text style={styles.loginLink}>Login</Text>
             </TouchableOpacity>
           </View>
@@ -100,10 +109,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: 80,
     paddingBottom: 60,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 40,
   },
   logo: {
@@ -111,25 +120,25 @@ const styles = StyleSheet.create({
     height: 120,
   },
   titleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 30,
   },
   welcomeText: {
     fontSize: FontSizes.xl,
     color: Colors.text.white,
-    fontWeight: '400',
+    fontWeight: "400",
     marginBottom: 8,
   },
   appName: {
     fontSize: FontSizes.xxxl,
     color: Colors.primary, // Yellow
-    fontWeight: 'bold',
+    fontWeight: "bold",
     letterSpacing: 1,
   },
   subtitle: {
     fontSize: FontSizes.md,
     color: Colors.text.white,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
     marginTop: 20,
     paddingHorizontal: Spacing.md,
@@ -142,9 +151,9 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     paddingVertical: 18,
     paddingHorizontal: Spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     elevation: 5,
     shadowColor: Colors.secondary,
     shadowOffset: {
@@ -157,7 +166,7 @@ const styles = StyleSheet.create({
   getStartedText: {
     fontSize: FontSizes.lg,
     color: Colors.secondary, // Black text
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
   },
   arrowCircle: {
@@ -165,13 +174,13 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: BorderRadius.full,
     backgroundColor: Colors.secondary, // Black circle
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: Spacing.lg,
   },
   loginText: {
@@ -181,6 +190,6 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: FontSizes.md,
     color: Colors.primary, // Yellow
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

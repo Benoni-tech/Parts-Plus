@@ -1,4 +1,4 @@
-// app/auth/signup.tsx
+// app/auth/signup.tsx - UPDATED WITH NEW UI
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -16,7 +16,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import VerificationModal from "../../src/components/verificationModal";
 import {
   BorderRadius,
   Colors,
@@ -35,19 +34,27 @@ export default function SignUpScreen() {
     password: "",
     confirmPassword: "",
   });
+  const [username, setUsername] = useState("");
 
-  const [errors, setErrors] = useState<Partial<SignUpFormData>>({});
+  const [errors, setErrors] = useState<
+    Partial<SignUpFormData & { username: string }>
+  >({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [isVerificationPending, setIsVerificationPending] = useState(false);
 
   /**
    * Validate form data
    */
   const validateForm = (): boolean => {
     try {
+      // Validate username
+      if (!username.trim()) {
+        setErrors({ username: "Full name is required" });
+        return false;
+      }
+
+      // Validate email and passwords
       signUpSchema.parse(formData);
       setErrors({});
       return true;
@@ -72,48 +79,40 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      await signUp(formData.email, formData.password);
-      // Show modal after successful signup
-      setIsVerificationPending(true);
-      setLoading(false);
-      setModalVisible(true);
+      // Step 1: Create auth account
+      await signUp(formData.email, formData.password, username.trim());
+
+      // Step 2: Show success message and navigate to verification
+      Alert.alert(
+        "Account Created! 🎉",
+        `Welcome ${username}! We've sent a verification email to ${formData.email}. Please verify your email to continue.`,
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/auth/verify-email" as any),
+          },
+        ],
+      );
     } catch (error: any) {
       setLoading(false);
-      Alert.alert("Sign Up Failed", error.message);
-    }
-  };
+      console.error("Signup error:", error);
 
-  /**
-   * Handle manual verification check
-   */
-  const handleCheckVerification = async () => {
-    if (!user) return;
+      let errorMessage = "Failed to create account";
 
-    setLoading(true);
-    try {
-      // Force reload the user to get the latest emailVerified status
-      await user.reload();
-
-      if (user.emailVerified) {
-        router.replace("/tabs");
-      } else {
-        Alert.alert(
-          "Not Verified",
-          "We haven't received the verification yet. Please check your email and click the link, then try again.",
-        );
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already registered";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password is too weak";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Network error. Please check your connection";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-    } catch (error: any) {
-      Alert.alert("Error", "Could not check verification status.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  /**
-   * Handle modal close
-   */
-  const handleModalClose = () => {
-    setModalVisible(false);
+      Alert.alert("Sign Up Failed", errorMessage);
+    }
   };
 
   return (
@@ -121,7 +120,7 @@ export default function SignUpScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -134,192 +133,200 @@ export default function SignUpScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={24} color={Colors.secondary} />
+            <Ionicons name="arrow-back" size={24} color={Colors.text.white} />
           </TouchableOpacity>
 
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>
-              Sign up to start streaming your favorite hymns
-            </Text>
+          <View style={styles.logoContainer}>
+            <Ionicons name="musical-notes" size={32} color={Colors.primary} />
+            <Text style={styles.logoText}>Heartly</Text>
           </View>
         </View>
 
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Create An Account</Text>
+          <Text style={styles.subtitle}>
+            Create Your Account Today - Start Your Journey Towards Success
+          </Text>
+        </View>
+
         {/* Form */}
-        {isVerificationPending ? (
-          <View style={styles.verificationContainer}>
-            <View style={styles.verificationIconContainer}>
+        <View style={styles.form}>
+          {/* Full Name Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Full Name</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.username && styles.inputError,
+              ]}
+            >
               <Ionicons
-                name="mail-open-outline"
-                size={64}
-                color={Colors.primary}
+                name="person-outline"
+                size={20}
+                color={Colors.text.light}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Your Name"
+                placeholderTextColor={Colors.text.light}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="words"
+                autoCorrect={false}
               />
             </View>
-            <Text style={styles.verificationTitle}>Verify your Email</Text>
-            <Text style={styles.verificationText}>
-              We've sent a verification link to {formData.email}. Please check
-              your inbox and click the link.
-            </Text>
-
-            <TouchableOpacity
-              style={styles.signUpButton}
-              onPress={handleCheckVerification}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={Colors.secondary} />
-              ) : (
-                <Text style={styles.signUpButtonText}>
-                  I've Verified My Email
-                </Text>
-              )}
-            </TouchableOpacity>
+            {errors.username && (
+              <Text style={styles.errorText}>{errors.username}</Text>
+            )}
           </View>
-        ) : (
-          <View style={styles.form}>
-            {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <View
-                style={[styles.inputWrapper, errors.email && styles.inputError]}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={Colors.text.secondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor={Colors.text.light}
-                  value={formData.email}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, email: text })
-                  }
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {errors.email && (
-                <Text style={styles.errorText}>{errors.email}</Text>
-              )}
-            </View>
 
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <View
-                style={[
-                  styles.inputWrapper,
-                  errors.password && styles.inputError,
-                ]}
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={Colors.text.secondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  placeholderTextColor={Colors.text.light}
-                  value={formData.password}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, password: text })
-                  }
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-outline" : "eye-off-outline"}
-                    size={20}
-                    color={Colors.text.secondary}
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              )}
-            </View>
-
-            {/* Confirm Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <View
-                style={[
-                  styles.inputWrapper,
-                  errors.confirmPassword && styles.inputError,
-                ]}
-              >
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={Colors.text.secondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                  placeholderTextColor={Colors.text.light}
-                  value={formData.confirmPassword}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, confirmPassword: text })
-                  }
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Ionicons
-                    name={
-                      showConfirmPassword ? "eye-outline" : "eye-off-outline"
-                    }
-                    size={20}
-                    color={Colors.text.secondary}
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.confirmPassword && (
-                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-              )}
-            </View>
-
-            {/* Sign Up Button */}
-            <TouchableOpacity
-              style={[styles.signUpButton, loading && styles.buttonDisabled]}
-              onPress={handleSignUp}
-              disabled={loading}
-              activeOpacity={0.8}
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <View
+              style={[styles.inputWrapper, errors.email && styles.inputError]}
             >
-              {loading ? (
-                <ActivityIndicator color={Colors.secondary} />
-              ) : (
-                <Text style={styles.signUpButtonText}>Sign Up</Text>
-              )}
-            </TouchableOpacity>
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={Colors.text.light}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Johndoe@gmail.com"
+                placeholderTextColor={Colors.text.light}
+                value={formData.email}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, email: text })
+                }
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
+          </View>
 
-            {/* Sign In Link */}
-            <View style={styles.signInContainer}>
-              <Text style={styles.signInText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/auth/signin")}>
-                <Text style={styles.signInLink}>Sign In</Text>
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.password && styles.inputError,
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={Colors.text.light}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Your Password"
+                placeholderTextColor={Colors.text.light}
+                value={formData.password}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, password: text })
+                }
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color={Colors.text.light}
+                />
               </TouchableOpacity>
             </View>
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
           </View>
-        )}
-      </ScrollView>
 
-      {/* Verification Modal */}
-      <VerificationModal visible={modalVisible} onClose={handleModalClose} />
+          {/* Confirm Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                errors.confirmPassword && styles.inputError,
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={Colors.text.light}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Your Password"
+                placeholderTextColor={Colors.text.light}
+                value={formData.confirmPassword}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, confirmPassword: text })
+                }
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color={Colors.text.light}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.confirmPassword && (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            )}
+          </View>
+
+          {/* Remember Me - Disabled for signup */}
+          <View style={styles.rememberContainer}>
+            <View style={styles.checkboxContainer}>
+              <View style={styles.checkbox} />
+              <Text style={styles.rememberText}>Remember me</Text>
+            </View>
+          </View>
+
+          {/* Sign Up Button */}
+          <TouchableOpacity
+            style={[styles.signUpButton, loading && styles.buttonDisabled]}
+            onPress={handleSignUp}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.text.primary} />
+            ) : (
+              <Text style={styles.signUpButtonText}>Sign In</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Sign In Link */}
+          <View style={styles.signInContainer}>
+            <Text style={styles.signInText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => router.push("/auth/signin")}>
+              <Text style={styles.signInLink}>Log In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -327,42 +334,53 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#121212",
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: Spacing.xl,
+    paddingBottom: 40,
   },
   header: {
     paddingTop: 60,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.inputBackground,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: Spacing.lg,
   },
-  headerTextContainer: {
-    marginTop: Spacing.md,
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.text.white,
+  },
+  titleContainer: {
+    marginBottom: Spacing.xl,
   },
   title: {
-    fontSize: FontSizes.xxxl,
+    fontSize: 28,
     fontWeight: "bold",
-    color: Colors.text.primary,
+    color: Colors.text.white,
     marginBottom: Spacing.sm,
   },
   subtitle: {
-    fontSize: FontSizes.md,
-    color: Colors.text.secondary,
-    lineHeight: 22,
+    fontSize: FontSizes.sm,
+    color: Colors.text.light,
+    lineHeight: 20,
   },
   form: {
     flex: 1,
-    paddingBottom: Spacing.xl,
   },
   inputContainer: {
     marginBottom: Spacing.lg,
@@ -370,17 +388,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FontSizes.sm,
     fontWeight: "600",
-    color: Colors.text.primary,
+    color: Colors.text.light,
     marginBottom: Spacing.sm,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.inputBackground,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "rgba(255, 255, 255, 0.1)",
     paddingHorizontal: Spacing.md,
+    height: 56,
   },
   inputError: {
     borderColor: Colors.error,
@@ -390,9 +409,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 50,
     fontSize: FontSizes.md,
-    color: Colors.text.primary,
+    color: Colors.text.white,
   },
   eyeIcon: {
     padding: Spacing.sm,
@@ -403,20 +421,35 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     marginLeft: Spacing.xs,
   },
+  rememberContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  rememberText: {
+    fontSize: FontSizes.sm,
+    color: Colors.text.light,
+  },
   signUpButton: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
-    paddingVertical: 16,
+    height: 56,
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: Spacing.lg,
-    elevation: 2,
-    shadowColor: Colors.secondary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginTop: Spacing.md,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -424,41 +457,21 @@ const styles = StyleSheet.create({
   signUpButtonText: {
     fontSize: FontSizes.lg,
     fontWeight: "600",
-    color: Colors.secondary,
+    color: Colors.text.primary,
   },
   signInContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: Spacing.lg,
+    marginTop: Spacing.xl,
   },
   signInText: {
     fontSize: FontSizes.md,
-    color: Colors.text.secondary,
+    color: Colors.text.light,
   },
   signInLink: {
     fontSize: FontSizes.md,
-    color: Colors.primary,
-    fontWeight: "600",
-  },
-  verificationContainer: {
-    alignItems: "center",
-    paddingVertical: Spacing.xl,
-  },
-  verificationIconContainer: {
-    marginBottom: Spacing.lg,
-  },
-  verificationTitle: {
-    fontSize: FontSizes.xl,
-    fontWeight: "bold",
-    color: Colors.text.primary,
-    marginBottom: Spacing.md,
-  },
-  verificationText: {
-    fontSize: FontSizes.md,
-    color: Colors.text.secondary,
-    textAlign: "center",
-    marginBottom: Spacing.xl,
-    lineHeight: 24,
+    color: Colors.text.white,
+    fontWeight: "700",
   },
 });

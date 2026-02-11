@@ -7,14 +7,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { FontSizes, Spacing } from "../../constants/colors";
 import { HymnService } from "../../services/firebase.service";
@@ -146,7 +146,6 @@ export default function FullScreenPlayer({
 
   return (
     <View style={styles.container}>
-      {/* Header with Background Image */}
       <ImageBackground
         source={{
           uri:
@@ -169,7 +168,6 @@ export default function FullScreenPlayer({
             </TouchableOpacity>
           </View>
 
-          {/* Album Art */}
           <View style={styles.albumContainer}>
             <Image
               source={{
@@ -183,9 +181,7 @@ export default function FullScreenPlayer({
         </LinearGradient>
       </ImageBackground>
 
-      {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Song Info */}
         <View style={styles.infoContainer}>
           <View style={styles.titleRow}>
             <View style={styles.titleSection}>
@@ -214,7 +210,6 @@ export default function FullScreenPlayer({
           </View>
         </View>
 
-        {/* Waveform */}
         <View style={styles.waveformContainer}>
           {Array.from({ length: 50 }).map((_, index) => {
             const progress = duration > 0 ? position / duration : 0;
@@ -236,7 +231,6 @@ export default function FullScreenPlayer({
           })}
         </View>
 
-        {/* Time & Slider */}
         <View style={styles.progressSection}>
           <View style={styles.timeRow}>
             <Text style={styles.timeText}>{formatTime(position)}</Text>
@@ -255,7 +249,6 @@ export default function FullScreenPlayer({
           />
         </View>
 
-        {/* Controls */}
         <View style={styles.controls}>
           <TouchableOpacity style={styles.controlButton}>
             <Ionicons name="shuffle" size={24} color="#666" />
@@ -293,7 +286,6 @@ export default function FullScreenPlayer({
           </TouchableOpacity>
         </View>
 
-        {/* Toggle Buttons */}
         <View style={styles.toggleButtons}>
           <TouchableOpacity
             style={[
@@ -337,7 +329,6 @@ export default function FullScreenPlayer({
           </TouchableOpacity>
         </View>
 
-        {/* Lyrics */}
         {showLyrics && hymn.lyrics && (
           <View style={styles.lyricsContainer}>
             <Text style={styles.lyricsTitle}>Lyrics</Text>
@@ -345,7 +336,6 @@ export default function FullScreenPlayer({
           </View>
         )}
 
-        {/* Credits */}
         {showCredits && (
           <View style={styles.creditsContainer}>
             <Text style={styles.creditsTitle}>Credits</Text>
@@ -369,7 +359,7 @@ export default function FullScreenPlayer({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#FFF", // CHANGED
   },
   headerBackground: {
     width: "100%",
@@ -410,7 +400,7 @@ const styles = StyleSheet.create({
   albumArt: {
     width: 280,
     height: 280,
-    borderRadius: 16,
+    borderRadius: 32, // CHANGED (more rounded sides)
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,
@@ -531,7 +521,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   toggleButtonActive: {
-    backgroundColor: "#9B59B6",
+    backgroundColor: "#e9bf03",
   },
   toggleText: {
     fontSize: FontSizes.sm,
@@ -588,7 +578,7 @@ const styles = StyleSheet.create({
   },
   creditName: {
     fontSize: FontSizes.sm,
-    color: "#000",
+    color: "#000000",
     fontWeight: "700",
   },
 });

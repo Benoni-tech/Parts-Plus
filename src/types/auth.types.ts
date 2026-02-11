@@ -1,9 +1,11 @@
-// src/types/auth.types.ts
+// src/types/auth.types.ts - UPDATED (ALIGNED WITH USERNAME FLOW)
 
 import { User as FirebaseUser } from "firebase/auth";
 
+/**
+ * Auth user mapped from Firebase Auth
+ */
 export interface User {
-  reload(): unknown;
   uid: string;
   email: string | null;
   displayName: string | null;
@@ -12,6 +14,22 @@ export interface User {
   createdAt: string;
 }
 
+/**
+ * Firestore user document structure
+ */
+export interface UserData {
+  uid: string;
+  username: string;
+  email: string | null;
+  emailVerified: boolean;
+  photoURL: string | null;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+/**
+ * Auth state stored in context
+ */
 export interface AuthState {
   user: User | null;
   loading: boolean;
@@ -19,8 +37,15 @@ export interface AuthState {
   initialized: boolean;
 }
 
+/**
+ * Auth context type definition
+ */
 export interface AuthContextType extends AuthState {
-  signUp: (email: string, password: string) => Promise<void>;
+  userData: UserData | null;
+
+  // ✅ Updated to include username
+  signUp: (email: string, password: string, username: string) => Promise<void>;
+
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   sendEmailVerification: () => Promise<void>;
@@ -29,6 +54,9 @@ export interface AuthContextType extends AuthState {
   refreshUser: () => Promise<void>;
 }
 
+/**
+ * Map Firebase user to app User type
+ */
 export const mapFirebaseUser = (firebaseUser: FirebaseUser): User => ({
   uid: firebaseUser.uid,
   email: firebaseUser.email,
@@ -36,7 +64,4 @@ export const mapFirebaseUser = (firebaseUser: FirebaseUser): User => ({
   photoURL: firebaseUser.photoURL,
   emailVerified: firebaseUser.emailVerified,
   createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
-  reload: function (): unknown {
-    throw new Error("Function not implemented.");
-  },
 });
