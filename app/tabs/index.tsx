@@ -13,13 +13,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
-import {
-  BorderRadius,
-  FontSizes,
-  Spacing
-} from "../../src/constants/colors";
+import { BorderRadius, FontSizes, Spacing } from "../../src/constants/colors";
 import { useAuth } from "../../src/hooks/useAuth";
 import {
   useHymns,
@@ -378,7 +374,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#FCA311",
+    backgroundColor: "#F97316",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -421,7 +417,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: BorderRadius.md,
-    backgroundColor: "#FCA311",
+    backgroundColor: "#F97316",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -464,7 +460,7 @@ const styles = StyleSheet.create({
   },
   playButton: {
     alignSelf: "flex-start",
-    backgroundColor: "#FCA311",
+    backgroundColor: "#F97316",
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.lg,
@@ -490,7 +486,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.5)",
   },
   dotActive: {
-    backgroundColor: "#FCA311",
+    backgroundColor: "#F97316",
     width: 24,
   },
   categoriesSection: {

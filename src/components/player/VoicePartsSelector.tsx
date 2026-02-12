@@ -27,8 +27,8 @@ const VOICE_PARTS: {
 }[] = [
   { part: "soprano", label: "Soprano", icon: "woman", color: "#FF6B6B" },
   { part: "alto", label: "Alto", icon: "musical-note", color: "#4ECDC4" },
-  { part: "tenor", label: "Tenor", icon: "man", color: "#FFD93D" },
-  { part: "bass", label: "Bass", icon: "musical-notes", color: "#A78BFA" },
+  { part: "tenor", label: "Tenor", icon: "man", color: "#381983" },
+  { part: "bass", label: "Bass", icon: "musical-notes", color: "#bbff00" },
 ];
 
 export default function VoicePartSelector({

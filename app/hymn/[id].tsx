@@ -1,5 +1,3 @@
-// app/hymn/[id].tsx - SPOTIFY STYLE
-
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -29,20 +27,21 @@ export default function HymnDetailScreen() {
     useState<VoicePart>("soprano");
   const [showFullPlayer, setShowFullPlayer] = useState(false);
 
-  // Get related songs based on tags
   const relatedFilter = hymn?.tags?.length
     ? { tags: [hymn.tags[0]] }
     : { category: hymn?.category };
+
   const { hymns: relatedHymns } = useHymns(relatedFilter);
   const relatedSongs = relatedHymns
     .filter((h) => h.id !== hymn?.id)
-    .slice(0, 4);
+    .slice(0, 3);
 
   const theme = {
-    background: isDark ? "#121212" : "#FFFFFF",
-    card: isDark ? "#1E1E1E" : "#F5F5F5",
-    text: isDark ? "#FFFFFF" : "#000000",
-    textSecondary: isDark ? "#B3B3B3" : "#666666",
+    background: "#E5E7EB",
+    card: "#F3F4F6",
+    text: "#111827",
+    textSecondary: "#6B7280",
+    primary: "#7C3AED",
   };
 
   if (loading) {
@@ -50,7 +49,7 @@ export default function HymnDetailScreen() {
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#9B59B6" />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </View>
     );
@@ -61,238 +60,127 @@ export default function HymnDetailScreen() {
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={64} color="#FF6B6B" />
           <Text style={styles.errorText}>{error || "Hymn not found"}</Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>Go Back</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
   }
 
   const voiceParts = [
-    {
-      part: "soprano",
-      name: "Soprano",
-      singer: hymn.credits.soprano,
-      icon: "woman",
-      color: "#FF6B6B",
-    },
-    {
-      part: "alto",
-      name: "Alto",
-      singer: hymn.credits.alto,
-      icon: "musical-note",
-      color: "#4ECDC4",
-    },
-    {
-      part: "tenor",
-      name: "Tenor",
-      singer: hymn.credits.tenor,
-      icon: "man",
-      color: "#FFD93D",
-    },
-    {
-      part: "bass",
-      name: "Bass",
-      singer: hymn.credits.bass,
-      icon: "musical-notes",
-      color: "#A78BFA",
-    },
+    { part: "soprano", name: "Soprano" },
+    { part: "alto", name: "Alto" },
+    { part: "tenor", name: "Tenor" },
+    { part: "bass", name: "Bass" },
   ];
+
+  const coverImage =
+    hymn.coverImage ||
+    `https://via.placeholder.com/300/9B59B6/FFFFFF?text=${hymn.title[0]}`;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header with Cover Image Background */}
-      <View style={styles.header}>
-        {/* Blurred Background */}
-        <Image
-          source={{
-            uri:
-              hymn.coverImage ||
-              `https://via.placeholder.com/400/9B59B6/FFFFFF?text=${hymn.title[0]}`,
-          }}
-          style={styles.headerBackground}
-          blurRadius={50}
-        />
-        <View style={styles.headerOverlay} />
+      {/* TOP SECTION */}
+      <View style={styles.topSection}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
+        </TouchableOpacity>
 
-        {/* Header Buttons */}
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.iconButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Cover Image */}
-        <View style={styles.coverContainer}>
-          <Image
-            source={{
-              uri:
-                hymn.coverImage ||
-                `https://via.placeholder.com/200/9B59B6/FFFFFF?text=${hymn.title[0]}`,
-            }}
-            style={styles.coverImage}
-          />
-        </View>
-
-        {/* Title and Badge */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>{hymn.title}</Text>
-          {hymn.number && (
-            <View style={styles.numberBadge}>
-              <Text style={styles.badgeText}>#{hymn.number}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Description */}
-        <Text style={styles.description}>
-          Composed by {hymn.composer} • {hymn.yearWritten || "Traditional"}
-        </Text>
+        <Text style={styles.title}>{hymn.title}</Text>
+        <Image source={{ uri: coverImage }} style={styles.coverImage} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Harmony Parts Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Harmony Parts
-          </Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* VOICE PARTS */}
+        <View style={styles.voiceContainer}>
+          <View style={styles.timeline} />
 
-          {voiceParts.map((vp, index) => (
-            <TouchableOpacity
-              key={vp.part}
-              style={[styles.partRow, { borderBottomColor: theme.card }]}
-              onPress={() => {
-                setSelectedVoicePart(vp.part as VoicePart);
-                setShowFullPlayer(true);
-              }}
-            >
-              <View style={styles.partLeft}>
-                {/* Part Icon */}
+          {voiceParts.map((vp) => {
+            const selected = selectedVoicePart === vp.part;
+
+            return (
+              <TouchableOpacity
+                key={vp.part}
+                style={styles.voiceRow}
+                onPress={() => {
+                  setSelectedVoicePart(vp.part as VoicePart);
+                  setShowFullPlayer(true);
+                }}
+              >
                 <View
                   style={[
-                    styles.partIcon,
-                    { backgroundColor: vp.color + "20" },
+                    styles.timelineDot,
+                    selected && styles.timelineDotActive,
                   ]}
-                >
-                  <Ionicons name={vp.icon as any} size={24} color={vp.color} />
-                </View>
-
-                {/* Part Info */}
-                <View style={styles.partInfo}>
-                  <Text style={[styles.partName, { color: theme.text }]}>
-                    {vp.name}
-                  </Text>
-                  <Text
-                    style={[styles.partCredit, { color: theme.textSecondary }]}
-                  >
-                    Credit: {vp.singer}
-                  </Text>
-                </View>
-              </View>
-
-              {/* More Button */}
-              <TouchableOpacity>
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={20}
-                  color={theme.textSecondary}
                 />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ))}
-        </View>
 
-        {/* Related Songs Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Related Songs
-            </Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-
-          {relatedSongs.length > 0 ? (
-            relatedSongs.map((song, index) => (
-              <View key={song.id} style={styles.relatedSongRow}>
-                <View style={styles.relatedLeft}>
-                  <Text
-                    style={[
-                      styles.relatedNumber,
-                      { color: theme.textSecondary },
-                    ]}
-                  >
-                    {index + 1}
-                  </Text>
+                <View
+                  style={[styles.voiceCard, selected && styles.voiceCardActive]}
+                >
                   <Image
-                    source={{
-                      uri:
-                        song.coverImage ||
-                        `https://via.placeholder.com/50/9B59B6/FFFFFF?text=${song.title[0]}`,
-                    }}
-                    style={styles.relatedCover}
+                    source={{ uri: coverImage }}
+                    style={styles.voiceImage}
                   />
-                  <View style={styles.relatedInfo}>
+                  <View>
                     <Text
-                      style={[styles.relatedTitle, { color: theme.text }]}
-                      numberOfLines={1}
+                      style={[
+                        styles.voiceTitle,
+                        selected && styles.voiceTitleActive,
+                      ]}
                     >
-                      {song.title}
+                      {hymn.title}
                     </Text>
                     <Text
                       style={[
-                        styles.relatedComposer,
-                        { color: theme.textSecondary },
+                        styles.voiceSubtitle,
+                        selected && styles.voiceSubtitleActive,
                       ]}
-                      numberOfLines={1}
                     >
-                      {song.composer}
+                      {vp.name}
                     </Text>
                   </View>
                 </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-                <TouchableOpacity
-                  onPress={() => router.push(`/hymn/${song.id}`)}
-                >
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={theme.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-            ))
-          ) : (
-            <Text style={[styles.noRelated, { color: theme.textSecondary }]}>
-              No related songs found
-            </Text>
-          )}
+        {/* RELATED SONGS */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Related Songs</Text>
+
+          <View style={styles.relatedGrid}>
+            {relatedSongs.map((song) => (
+              <TouchableOpacity
+                key={song.id}
+                style={styles.relatedCard}
+                onPress={() => router.push(`/hymn/${song.id}`)}
+              >
+                <Image
+                  source={{
+                    uri:
+                      song.coverImage ||
+                      `https://via.placeholder.com/150/9B59B6/FFFFFF?text=${song.title[0]}`,
+                  }}
+                  style={styles.relatedImage}
+                />
+                <Text style={styles.relatedTitle} numberOfLines={1}>
+                  {song.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Full Screen Player Modal */}
-      <Modal
-        visible={showFullPlayer}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
+      {/* FULL PLAYER */}
+      <Modal visible={showFullPlayer} animationType="slide">
         <FullScreenPlayer
           hymn={hymn}
           voicePart={selectedVoicePart}
@@ -304,185 +192,122 @@ export default function HymnDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
 
-  // Header with Cover
-  header: {
-    height: 400,
-    position: "relative",
+  topSection: {
+    height: "30%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 40,
   },
-  headerBackground: {
+  backButton: {
     position: "absolute",
-    width: "100%",
-    height: "100%",
-  },
-  headerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  headerButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    zIndex: 10,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  coverContainer: {
-    alignItems: "center",
-    marginTop: 20,
-  },
-  coverImage: {
-    width: 180,
-    height: 180,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-  },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 20,
-    paddingHorizontal: 20,
-    gap: 8,
+    top: 40,
+    left: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
-    color: "#FFF",
-    textAlign: "center",
+    marginBottom: 12,
   },
-  numberBadge: {
-    backgroundColor: "#9B59B6",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+  coverImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 20,
+  },
+
+  voiceContainer: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 24,
+    paddingLeft: 56,
+  },
+  timeline: {
+    position: "absolute",
+    left: 28,
+    top: 24,
+    bottom: 24,
+    width: 2,
+    backgroundColor: "#D1D5DB",
+  },
+  timelineDot: {
+    position: "absolute",
+    left: 20,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#9CA3AF",
+  },
+  timelineDotActive: {
+    backgroundColor: "#7C3AED",
+  },
+  voiceRow: {
+    marginBottom: 20,
+  },
+  voiceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 16,
+    padding: 12,
+    marginRight: 16,
+  },
+  voiceCardActive: {
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#7C3AED",
+  },
+  voiceImage: {
+    width: 56,
+    height: 56,
     borderRadius: 12,
+    marginRight: 12,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#FFF",
+  voiceTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
   },
-  description: {
+  voiceTitleActive: {
+    color: "#4C1D95",
+  },
+  voiceSubtitle: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.7)",
-    textAlign: "center",
-    marginTop: 8,
-    paddingHorizontal: 20,
+    color: "#6B7280",
+  },
+  voiceSubtitleActive: {
+    color: "#7C3AED",
   },
 
-  // Content
-  content: {
-    flex: 1,
-  },
-
-  // Section
   section: {
     marginTop: 24,
     paddingHorizontal: 16,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
-  },
-  viewAll: {
-    fontSize: 14,
-    color: "#9B59B6",
-    fontWeight: "600",
+    marginBottom: 12,
   },
 
-  // Harmony Parts
-  partRow: {
+  relatedGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  partLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
     gap: 12,
   },
-  partIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  partInfo: {
+  relatedCard: {
     flex: 1,
   },
-  partName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  partCredit: {
-    fontSize: 13,
-  },
-
-  // Related Songs
-  relatedSongRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  relatedLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: 12,
-  },
-  relatedNumber: {
-    fontSize: 16,
-    fontWeight: "600",
-    width: 20,
-  },
-  relatedCover: {
-    width: 50,
-    height: 50,
-    borderRadius: 4,
-  },
-  relatedInfo: {
-    flex: 1,
+  relatedImage: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 12,
+    marginBottom: 6,
   },
   relatedTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  relatedComposer: {
     fontSize: 13,
-  },
-  noRelated: {
-    fontSize: 14,
-    textAlign: "center",
-    paddingVertical: 20,
+    fontWeight: "600",
   },
 
-  // Loading & Error
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -492,23 +317,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
   errorText: {
-    marginTop: 16,
     fontSize: 16,
-    color: "#FF6B6B",
-    textAlign: "center",
-  },
-  backButton: {
-    marginTop: 20,
-    backgroundColor: "#9B59B6",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: "#FFF",
-    fontWeight: "700",
+    color: "red",
   },
 });

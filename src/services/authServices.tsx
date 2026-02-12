@@ -1,5 +1,3 @@
-// src/services/authService.ts
-
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification as firebaseSendEmailVerification,
@@ -30,16 +28,16 @@ class AuthService {
 
     const user = userCredential.user;
 
-    // Ensure token is ready
-    await user.getIdToken(true);
-
-    // Update Firebase Auth profile
+    // Update Firebase Auth profile FIRST
     await updateProfile(user, {
-      displayName: username,
+      displayName: username.trim(),
     });
 
-    // Create Firestore document
-    await this.createUserDocument(user, username);
+    // 🔑 Force reload so displayName is guaranteed
+    await reload(user);
+
+    // Create Firestore document AFTER reload
+    await this.createUserDocument(user, username.trim());
 
     // Send verification email
     await this.sendEmailVerification(user);
@@ -144,7 +142,7 @@ class AuthService {
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email,
-      username: username?.trim() || "Unnamed User",
+      username: username.trim(), // ✅ FIXED (NO FALLBACK)
       photoURL: user.photoURL || null,
       emailVerified: user.emailVerified,
       createdAt: serverTimestamp(),

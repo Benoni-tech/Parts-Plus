@@ -1,4 +1,4 @@
-// app/auth/signup.tsx - UPDATED WITH NEW UI
+// app/auth/signup.tsx
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,20 +15,82 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import {
+  AuthTheme,
   BorderRadius,
-  Colors,
   FontSizes,
   Spacing,
 } from "../../src/constants/colors";
 import { useAuth } from "../../src/hooks/useAuth";
 import { SignUpFormData, signUpSchema } from "../../src/schemas/authSchemas";
 
+// ─── Grid overlay — fades LEFT (transparent) → RIGHT (opaque) ────────────────
+// In dark mode lines are bright white; in light mode softer white.
+function GridOverlay({ isDark }: { isDark: boolean }) {
+  const cols = 8;
+  const rows = 5;
+  // Dark: solid white lines. Light: softer white.
+  const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
+
+  return (
+    <View style={gridStyles.container} pointerEvents="none">
+      {/* Vertical lines — opacity increases left → right */}
+      {Array.from({ length: cols }).map((_, i) => {
+        const progress = i / (cols - 1); // 0 → 1
+        return (
+          <View
+            key={`v-${i}`}
+            style={[
+              gridStyles.line,
+              gridStyles.vertical,
+              {
+                left: `${progress * 100}%` as any,
+                // leftmost fully transparent, rightmost fully opaque
+                opacity: isDark
+                  ? progress * 0.95 // dark: 0 → 0.95
+                  : progress * 0.6, // light: 0 → 0.60
+                backgroundColor: lineColor,
+              },
+            ]}
+          />
+        );
+      })}
+      {/* Horizontal lines — consistent low opacity */}
+      {Array.from({ length: rows }).map((_, i) => (
+        <View
+          key={`h-${i}`}
+          style={[
+            gridStyles.line,
+            gridStyles.horizontal,
+            {
+              top: `${(i / (rows - 1)) * 100}%` as any,
+              opacity: isDark ? 0.3 : 0.22,
+              backgroundColor: lineColor,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+const gridStyles = StyleSheet.create({
+  container: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+  line: { position: "absolute" },
+  vertical: { top: 0, bottom: 0, width: 1 },
+  horizontal: { left: 0, right: 0, height: 1 },
+});
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function SignUpScreen() {
   const router = useRouter();
-  const { signUp, user } = useAuth();
+  const { signUp } = useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const T = isDark ? AuthTheme.dark : AuthTheme.light;
 
   const [formData, setFormData] = useState<SignUpFormData>({
     email: "",
@@ -35,7 +98,6 @@ export default function SignUpScreen() {
     confirmPassword: "",
   });
   const [username, setUsername] = useState("");
-
   const [errors, setErrors] = useState<
     Partial<SignUpFormData & { username: string }>
   >({});
@@ -43,18 +105,12 @@ export default function SignUpScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Validate form data
-   */
   const validateForm = (): boolean => {
     try {
-      // Validate username
       if (!username.trim()) {
-        setErrors({ username: "Full name is required" });
+        setErrors({ username: "Username is required" });
         return false;
       }
-
-      // Validate email and passwords
       signUpSchema.parse(formData);
       setErrors({});
       return true;
@@ -68,21 +124,11 @@ export default function SignUpScreen() {
     }
   };
 
-  /**
-   * Handle sign up
-   */
   const handleSignUp = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
-
     try {
-      // Step 1: Create auth account
       await signUp(formData.email, formData.password, username.trim());
-
-      // Step 2: Show success message and navigate to verification
       Alert.alert(
         "Account Created! 🎉",
         `Welcome ${username}! We've sent a verification email to ${formData.email}. Please verify your email to continue.`,
@@ -95,383 +141,408 @@ export default function SignUpScreen() {
       );
     } catch (error: any) {
       setLoading(false);
-      console.error("Signup error:", error);
-
-      let errorMessage = "Failed to create account";
-
-      if (error.code === "auth/email-already-in-use") {
-        errorMessage = "This email is already registered";
-      } else if (error.code === "auth/invalid-email") {
-        errorMessage = "Invalid email address";
-      } else if (error.code === "auth/weak-password") {
-        errorMessage = "Password is too weak";
-      } else if (error.code === "auth/network-request-failed") {
-        errorMessage = "Network error. Please check your connection";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      Alert.alert("Sign Up Failed", errorMessage);
+      let msg = "Failed to create account";
+      if (error.code === "auth/email-already-in-use")
+        msg = "This email is already registered";
+      else if (error.code === "auth/invalid-email")
+        msg = "Invalid email address";
+      else if (error.code === "auth/weak-password")
+        msg = "Password is too weak";
+      else if (error.code === "auth/network-request-failed")
+        msg = "Network error. Please check your connection";
+      else if (error.message) msg = error.message;
+      Alert.alert("Sign Up Failed", msg);
     }
   };
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <StatusBar style="light" />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+  // ── Reusable input renderer ──────────────────────────────────────────────
+  const renderInput = (
+    label: string,
+    icon: string,
+    value: string,
+    onChange: (t: string) => void,
+    options: {
+      placeholder: string;
+      keyboardType?: any;
+      autoCapitalize?: any;
+      secure?: boolean;
+      toggleSecure?: () => void;
+      showSecure?: boolean;
+      error?: string;
+    },
+  ) => (
+    <View style={styles.inputContainer}>
+      <Text style={[styles.label, { color: T.labelColor }]}>{label}</Text>
+      <View
+        style={[
+          styles.inputWrapper,
+          {
+            backgroundColor: T.inputBg,
+            borderColor: options.error ? "#ff6b6b" : T.inputBorder,
+          },
+        ]}
       >
-        {/* Header */}
-        <View style={styles.header}>
+        <Ionicons
+          name={icon as any}
+          size={18}
+          color={T.inputIcon}
+          style={styles.inputIcon}
+        />
+        <TextInput
+          style={[styles.input, { color: T.inputText }]}
+          placeholder={options.placeholder}
+          placeholderTextColor={T.inputPlaceholder}
+          value={value}
+          onChangeText={onChange}
+          keyboardType={options.keyboardType ?? "default"}
+          autoCapitalize={options.autoCapitalize ?? "none"}
+          autoCorrect={false}
+          secureTextEntry={options.secure && !options.showSecure}
+        />
+        {options.toggleSecure && (
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={options.toggleSecure}
+            style={styles.eyeIcon}
           >
-            <Ionicons name="arrow-back" size={24} color={Colors.text.white} />
+            <Ionicons
+              name={options.showSecure ? "eye-outline" : "eye-off-outline"}
+              size={18}
+              color={T.inputIcon}
+            />
           </TouchableOpacity>
+        )}
+      </View>
+      {options.error && <Text style={styles.errorText}>{options.error}</Text>}
+    </View>
+  );
 
-          <View style={styles.logoContainer}>
-            <Ionicons name="musical-notes" size={32} color={Colors.primary} />
-            <Text style={styles.logoText}>Heartly</Text>
-          </View>
-        </View>
+  return (
+    // Fix for keyboard glitch: ScrollView wraps everything OUTSIDE
+    // KeyboardAvoidingView so the card doesn't jump when keyboard opens.
+    <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
+      <StatusBar style={T.statusBar} />
 
-        {/* Title */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Create An Account</Text>
-          <Text style={styles.subtitle}>
-            Create Your Account Today - Start Your Journey Towards Success
-          </Text>
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          {/* Full Name Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                errors.username && styles.inputError,
-              ]}
-            >
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color={Colors.text.light}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Your Name"
-                placeholderTextColor={Colors.text.light}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-            </View>
-            {errors.username && (
-              <Text style={styles.errorText}>{errors.username}</Text>
-            )}
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <View
-              style={[styles.inputWrapper, errors.email && styles.inputError]}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={Colors.text.light}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Johndoe@gmail.com"
-                placeholderTextColor={Colors.text.light}
-                value={formData.email}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, email: text })
-                }
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                errors.password && styles.inputError,
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={Colors.text.light}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Your Password"
-                placeholderTextColor={Colors.text.light}
-                value={formData.password}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, password: text })
-                }
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={showPassword ? "eye-outline" : "eye-off-outline"}
-                  size={20}
-                  color={Colors.text.light}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                errors.confirmPassword && styles.inputError,
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={Colors.text.light}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm Your Password"
-                placeholderTextColor={Colors.text.light}
-                value={formData.confirmPassword}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, confirmPassword: text })
-                }
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
-                  size={20}
-                  color={Colors.text.light}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.confirmPassword && (
-              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-            )}
-          </View>
-
-          {/* Remember Me - Disabled for signup */}
-          <View style={styles.rememberContainer}>
-            <View style={styles.checkboxContainer}>
-              <View style={styles.checkbox} />
-              <Text style={styles.rememberText}>Remember me</Text>
-            </View>
-          </View>
-
-          {/* Sign Up Button */}
-          <TouchableOpacity
-            style={[styles.signUpButton, loading && styles.buttonDisabled]}
-            onPress={handleSignUp}
-            disabled={loading}
-            activeOpacity={0.8}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.kavWrapper}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView
+          contentContainerStyle={styles.outerScroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* ── Card ─────────────────────────────────────────────────── */}
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: T.cardBg,
+                borderColor: T.cardBorder,
+                shadowColor: T.shadow,
+              },
+            ]}
           >
-            {loading ? (
-              <ActivityIndicator color={Colors.text.primary} />
-            ) : (
-              <Text style={styles.signUpButtonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
+            {/* ── Top banner ─────────────────────────────────────────── */}
+            <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
+              {/* Left column */}
+              <View style={styles.bannerLeft}>
+                {/* Row 1: circular back button + logo side by side */}
+                <View style={styles.bannerTopRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.backCircle,
+                      {
+                        backgroundColor: T.backRectBg,
+                        borderColor: T.backRectBorder,
+                      },
+                    ]}
+                    onPress={() => router.back()}
+                  >
+                    <Ionicons name="arrow-back" size={16} color={T.backArrow} />
+                  </TouchableOpacity>
 
-          {/* Sign In Link */}
-          <View style={styles.signInContainer}>
-            <Text style={styles.signInText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push("/auth/signin")}>
-              <Text style={styles.signInLink}>Log In</Text>
-            </TouchableOpacity>
+                  {/* Logo — 120×120 equivalent scaled to banner height */}
+                  <Image
+                    source={require("../../assets/images/logo.png")}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                    // @ts-ignore
+                    tintColor="#ffffff"
+                  />
+                </View>
+
+                {/* Row 2: heading + subtitle pushed a bit lower */}
+                <View style={styles.bannerTextBlock}>
+                  <Text style={[styles.bannerTitle, { color: T.titleColor }]}>
+                    Get Started
+                  </Text>
+                  <Text
+                    style={[styles.bannerSubtitle, { color: T.subtitleColor }]}
+                  >
+                    Sign up today and start streaming!
+                  </Text>
+                </View>
+              </View>
+
+              {/* Right column: fading grid */}
+              <View style={styles.bannerRight}>
+                <GridOverlay isDark={isDark} />
+              </View>
+            </View>
+
+            {/* ── Form ───────────────────────────────────────────────── */}
+            <View style={styles.form}>
+              {/* Username (was Full Name) */}
+              {renderInput(
+                "Username",
+                "person-outline",
+                username,
+                setUsername,
+                {
+                  placeholder: "Enter a username",
+                  autoCapitalize: "none",
+                  error: errors.username,
+                },
+              )}
+              {renderInput(
+                "Email",
+                "mail-outline",
+                formData.email,
+                (t) => setFormData({ ...formData, email: t }),
+                {
+                  placeholder: "johndoe@gmail.com",
+                  keyboardType: "email-address",
+                  error: errors.email,
+                },
+              )}
+              {renderInput(
+                "Password",
+                "lock-closed-outline",
+                formData.password,
+                (t) => setFormData({ ...formData, password: t }),
+                {
+                  placeholder: "Enter Your Password",
+                  secure: true,
+                  showSecure: showPassword,
+                  toggleSecure: () => setShowPassword(!showPassword),
+                  error: errors.password,
+                },
+              )}
+              {renderInput(
+                "Confirm Password",
+                "lock-closed-outline",
+                formData.confirmPassword,
+                (t) => setFormData({ ...formData, confirmPassword: t }),
+                {
+                  placeholder: "Confirm Your Password",
+                  secure: true,
+                  showSecure: showConfirmPassword,
+                  toggleSecure: () =>
+                    setShowConfirmPassword(!showConfirmPassword),
+                  error: errors.confirmPassword,
+                },
+              )}
+
+              {/* ── Button — welcome.tsx pill style ──────────────────── */}
+              <View style={styles.buttonSpacer} />
+              <TouchableOpacity
+                style={[
+                  styles.signUpButton,
+                  { backgroundColor: T.btnBg, shadowColor: T.shadow },
+                  loading && styles.buttonDisabled,
+                ]}
+                onPress={handleSignUp}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color={T.btnText} style={{ flex: 1 }} />
+                ) : (
+                  <>
+                    <Text
+                      style={[styles.signUpButtonText, { color: T.btnText }]}
+                    >
+                      Create Account
+                    </Text>
+                    <View
+                      style={[
+                        styles.arrowCircle,
+                        { backgroundColor: T.btnArrowBg },
+                      ]}
+                    >
+                      <Ionicons
+                        name="arrow-forward"
+                        size={18}
+                        color={T.btnArrow}
+                      />
+                    </View>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Sign In link */}
+              <View style={styles.signInContainer}>
+                <Text style={[styles.signInText, { color: T.signInText }]}>
+                  Already have an account?{" "}
+                </Text>
+                <TouchableOpacity onPress={() => router.push("/auth/signin")}>
+                  <Text style={[styles.signInLink, { color: T.signInLink }]}>
+                    Log In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  mainBackground: {
     flex: 1,
-    backgroundColor: "#121212",
   },
-  scrollContent: {
+  // KAV fills the screen; ScrollView inside handles vertical centering
+  kavWrapper: {
+    flex: 1,
+  },
+  outerScroll: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 48,
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: Spacing.lg,
+
+  // ── Card ─────────────────────────────────────────────────────────────────
+  card: {
+    width: "94%",
+    maxWidth: 440,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.22,
+    shadowRadius: 32,
+    elevation: 20,
+  },
+
+  // ── Banner ────────────────────────────────────────────────────────────────
+  topBanner: {
+    borderRadius: 20,
+    margin: 12,
+    marginBottom: 0,
+    height: 200, // tall enough for 120px-equiv logo + text
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  bannerLeft: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
+    justifyContent: "space-between", // row 1 top, text block bottom
+    zIndex: 2,
+  },
+  bannerTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: Spacing.sm,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  // Circular back button — matches welcome.tsx arrow circle style
+  backCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17, // full circle
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  logoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  logoImage: {
+    width: 120, // matches welcome.tsx logo width
+    height: 80, // proportional to banner row height
   },
-  logoText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.text.white,
+  // Text block pushed toward bottom of banner
+  bannerTextBlock: {
+    marginTop: Spacing.sm,
   },
-  titleContainer: {
-    marginBottom: Spacing.xl,
+  bannerTitle: {
+    fontSize: FontSizes.xl, // matches welcome.tsx welcomeText fontSize
+    fontWeight: "900", // matches welcome.tsx fontWeight
+    letterSpacing: 0.2,
+    marginBottom: 4,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: Colors.text.white,
-    marginBottom: Spacing.sm,
+  bannerSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
   },
-  subtitle: {
-    fontSize: FontSizes.sm,
-    color: Colors.text.light,
-    lineHeight: 20,
+  bannerRight: {
+    width: 150,
+    overflow: "hidden",
   },
+
+  // ── Form ─────────────────────────────────────────────────────────────────
   form: {
-    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 36,
   },
-  inputContainer: {
-    marginBottom: Spacing.lg,
-  },
+
+  inputContainer: { marginBottom: 14 },
   label: {
-    fontSize: FontSizes.sm,
+    fontSize: 11,
     fontWeight: "600",
-    color: Colors.text.light,
-    marginBottom: Spacing.sm,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    paddingHorizontal: Spacing.md,
-    height: 56,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    height: 50,
   },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  inputIcon: {
-    marginRight: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: FontSizes.md,
-    color: Colors.text.white,
-  },
-  eyeIcon: {
-    padding: Spacing.sm,
-  },
-  errorText: {
-    fontSize: FontSizes.xs,
-    color: Colors.error,
-    marginTop: Spacing.xs,
-    marginLeft: Spacing.xs,
-  },
-  rememberContainer: {
+  inputIcon: { marginRight: 8 },
+  input: { flex: 1, fontSize: 14 },
+  eyeIcon: { padding: 6 },
+  errorText: { fontSize: 11, color: "#ff6b6b", marginTop: 4, marginLeft: 4 },
+
+  // ── Button ────────────────────────────────────────────────────────────────
+  buttonSpacer: { height: 22 },
+  signUpButton: {
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.lg,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-  },
-  rememberText: {
-    fontSize: FontSizes.sm,
-    color: Colors.text.light,
-  },
-  signUpButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
-    height: 56,
+  buttonDisabled: { opacity: 0.55 },
+  signUpButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  arrowCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: Spacing.md,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  signUpButtonText: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
-    color: Colors.text.primary,
-  },
+
+  // ── Footer link ───────────────────────────────────────────────────────────
   signInContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: Spacing.xl,
+    marginTop: 20,
   },
-  signInText: {
-    fontSize: FontSizes.md,
-    color: Colors.text.light,
-  },
-  signInLink: {
-    fontSize: FontSizes.md,
-    color: Colors.text.white,
-    fontWeight: "700",
-  },
+  signInText: { fontSize: 13 },
+  signInLink: { fontSize: 13, fontWeight: "700" },
 });

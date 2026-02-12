@@ -1,5 +1,3 @@
-// src/contexts/AuthContext.tsx - WITH USERDATA
-
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import React, { createContext, ReactNode, useEffect, useState } from "react";
@@ -12,7 +10,6 @@ import {
   UserData,
 } from "../types/auth.types";
 
-// Create the context
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined,
 );
@@ -21,10 +18,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-/**
- * Auth Provider Component
- * Manages authentication state and provides auth methods to children
- */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -35,9 +28,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const [userData, setUserData] = useState<UserData | null>(null);
 
-  /**
-   * Fetch user data from Firestore
-   */
   const fetchUserData = async (uid: string): Promise<UserData | null> => {
     try {
       const userDoc = await getDoc(doc(db, "users", uid));
@@ -51,20 +41,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
-        console.log(
-          "🔄 Auth state changed:",
-          firebaseUser?.email,
-          "Verified:",
-          firebaseUser?.emailVerified,
-        );
-
         if (firebaseUser) {
-          // Fetch user data from Firestore
           const data = await fetchUserData(firebaseUser.uid);
           setUserData(data);
 
@@ -85,7 +66,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       },
       (error) => {
-        console.error("Auth state change error:", error);
         setState({
           user: null,
           loading: false,
@@ -95,22 +75,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       },
     );
 
-    // Cleanup subscription
     return () => unsubscribe();
   }, []);
 
   /**
-   * Sign up with email and password
+   * Sign up (email, password, username)
    */
-  const signUp = async (email: string, password: string): Promise<void> => {
+  const signUp = async (
+    email: string,
+    password: string,
+    username: string,
+  ): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
-      console.log("📝 Creating user account...");
-      await authService.createUser(email, password);
-      console.log("✅ User account created");
-      // State will be updated by onAuthStateChanged
+
+      await authService.createUser(email, password, username);
+
+      // ✅ FIX: ensure Firestore userData is available immediately
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const data = await fetchUserData(currentUser.uid);
+        setUserData(data);
+      }
     } catch (error: any) {
-      console.error("❌ Signup error:", error);
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -121,23 +108,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   /**
-   * Sign in with email and password
+   * Sign in
    */
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       await authService.signIn(email, password);
-
-      // Reload the user to get fresh emailVerified status
-      if (auth.currentUser) {
-        await auth.currentUser.reload();
-        console.log(
-          "✅ User signed in, verified:",
-          auth.currentUser.emailVerified,
-        );
-      }
-
-      // State will be updated by onAuthStateChanged
     } catch (error: any) {
       setState((prev) => ({
         ...prev,
@@ -155,8 +131,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       await authService.signOut();
-      console.log("✅ User signed out");
-      // State will be updated by onAuthStateChanged
     } catch (error: any) {
       setState((prev) => ({
         ...prev,
@@ -167,85 +141,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  /**
-   * Send email verification
-   */
   const sendEmailVerification = async (): Promise<void> => {
-    try {
-      console.log("📧 Sending verification email...");
-      await authService.sendEmailVerification();
-      console.log("✅ Verification email sent");
-    } catch (error: any) {
-      console.error("❌ Error sending verification:", error);
-      setState((prev) => ({ ...prev, error: error.message }));
-      throw error;
-    }
+    await authService.sendEmailVerification();
   };
 
-  /**
-   * Check if email is verified
-   */
   const checkEmailVerified = async (): Promise<boolean> => {
-    try {
-      const isVerified = await authService.checkEmailVerified();
-      console.log("🔍 Email verification check:", isVerified);
-
-      // Update user state if verified
-      if (isVerified && auth.currentUser) {
-        setState((prev) => ({
-          ...prev,
-          user: mapFirebaseUser(auth.currentUser!),
-        }));
-      }
-
-      return isVerified;
-    } catch (error: any) {
-      setState((prev) => ({ ...prev, error: error.message }));
-      throw error;
-    }
+    return await authService.checkEmailVerified();
   };
 
-  /**
-   * Reset password
-   */
   const resetPassword = async (email: string): Promise<void> => {
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-      await authService.resetPassword(email);
-      setState((prev) => ({ ...prev, loading: false }));
-    } catch (error: any) {
+    await authService.resetPassword(email);
+  };
+
+  const refreshUser = async (): Promise<void> => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      const data = await fetchUserData(auth.currentUser.uid);
+      setUserData(data);
       setState((prev) => ({
         ...prev,
-        loading: false,
-        error: error.message,
+        user: mapFirebaseUser(auth.currentUser!),
       }));
-      throw error;
-    }
-  };
-
-  /**
-   * Refresh user data
-   */
-  const refreshUser = async (): Promise<void> => {
-    try {
-      if (auth.currentUser) {
-        await auth.currentUser.reload();
-        const data = await fetchUserData(auth.currentUser.uid);
-        setUserData(data);
-        setState((prev) => ({
-          ...prev,
-          user: mapFirebaseUser(auth.currentUser!),
-        }));
-        console.log("🔄 User data refreshed");
-      }
-    } catch (error: any) {
-      console.error("Error refreshing user:", error);
     }
   };
 
   const value: AuthContextType = {
     ...state,
-    userData, // Add userData to context
+    userData,
     signUp,
     signIn,
     signOut,

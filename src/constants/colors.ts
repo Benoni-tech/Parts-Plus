@@ -123,3 +123,104 @@ export const ZIndex = {
   toast: 1000,
   tooltip: 10000,
 };
+
+// ─── Auth Screen Theme Tokens ─────────────────────────────────────────────────
+// Used by signup, signin, and any other auth screens.
+// Import: import { AuthTheme } from "../../src/constants/colors";
+// Usage:  const T = useColorScheme() === "dark" ? AuthTheme.dark : AuthTheme.light;
+
+export const AuthTheme = {
+  dark: {
+    // Backgrounds
+    mainBg: "#0a0a0a", // near-black outer shell
+    cardBg: "#161616", // slightly lifted card — not pure black
+    cardBorder: "rgba(255, 255, 255, 0.94)",
+
+    // Banner (top accent block inside card)
+    bannerBg: "#222222", // lighter-black for contrast against card
+    backRectBg: "rgba(255,255,255,0.12)",
+    backRectBorder: "rgba(255,255,255,0.22)",
+    backArrow: "#ffffff",
+    titleColor: "#ffffff",
+    subtitleColor: "rgba(255,255,255,0.60)",
+
+    // Grid lines — tinted warm white so they pop in dark mode
+    gridLine: "rgb(255, 255, 255)",
+    gridLineTint: "#e8e0d0", // warm tint baked into the line colour
+
+    // Form labels
+    labelColor: "rgba(255,255,255,0.55)",
+
+    // Input fields — clearly visible borders + backgrounds in dark mode
+    inputBg: "#2a2a2a", // distinct mid-grey, NOT transparent
+    inputBorder: "rgba(255,255,255,0.22)", // visible white-ish border
+    inputBorderFocus: "rgba(255,255,255,0.50)",
+    inputText: "#ffffff",
+    inputPlaceholder: "rgba(255,255,255,0.38)",
+    inputIcon: "rgba(255,255,255,0.50)",
+
+    // Misc
+    checkboxBorder: "rgba(255,255,255,0.30)",
+    rememberText: "rgba(255,255,255,0.45)",
+
+    // Button — pill style matching welcome.tsx
+    btnBg: "#ffffff",
+    btnText: "#0a0a0a",
+    btnArrowBg: "#0a0a0a",
+    btnArrow: "#ffffff",
+
+    // Sign-in link
+    signInText: "rgba(255,255,255,0.45)",
+    signInLink: "#ffffff",
+
+    statusBar: "light" as const,
+    shadow: "#000000",
+  },
+
+  light: {
+    // Backgrounds
+    mainBg: "#efefef",
+    cardBg: "#ffffff",
+    cardBorder: "rgba(0,0,0,0.07)",
+
+    // Banner
+    bannerBg: "#111111",
+    backRectBg: "rgba(255,255,255,0.15)",
+    backRectBorder: "rgba(255,255,255,0.30)",
+    backArrow: "#ffffff",
+    titleColor: "#ffffff",
+    subtitleColor: "rgba(255,255,255,0.65)",
+
+    // Grid lines
+    gridLine: "rgba(255,255,255,0.55)",
+    gridLineTint: "#ffffff",
+
+    // Labels
+    labelColor: "#666666",
+
+    // Input fields
+    inputBg: "#f5f5f5",
+    inputBorder: "#d8d8d8",
+    inputBorderFocus: "#aaaaaa",
+    inputText: "#111111",
+    inputPlaceholder: "#bbbbbb",
+    inputIcon: "#aaaaaa",
+
+    // Misc
+    checkboxBorder: "#cccccc",
+    rememberText: "#999999",
+
+    // Button
+    btnBg: "#111111",
+    btnText: "#ffffff",
+    btnArrowBg: "#ffffff",
+    btnArrow: "#111111",
+
+    // Sign-in link
+    signInText: "#999999",
+    signInLink: "#111111",
+
+    statusBar: "dark" as const,
+    shadow: "#00000018",
+  },
+};
