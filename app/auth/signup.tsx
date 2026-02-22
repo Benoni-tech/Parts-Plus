@@ -27,19 +27,16 @@ import {
 import { useAuth } from "../../src/hooks/useAuth";
 import { SignUpFormData, signUpSchema } from "../../src/schemas/authSchemas";
 
-// ─── Grid overlay — fades LEFT (transparent) → RIGHT (opaque) ────────────────
-// In dark mode lines are bright white; in light mode softer white.
+// ─── Grid overlay ─────────────────────────────────────────────────────────────
 function GridOverlay({ isDark }: { isDark: boolean }) {
   const cols = 8;
   const rows = 5;
-  // Dark: solid white lines. Light: softer white.
   const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
 
   return (
     <View style={gridStyles.container} pointerEvents="none">
-      {/* Vertical lines — opacity increases left → right */}
       {Array.from({ length: cols }).map((_, i) => {
-        const progress = i / (cols - 1); // 0 → 1
+        const progress = i / (cols - 1);
         return (
           <View
             key={`v-${i}`}
@@ -48,17 +45,13 @@ function GridOverlay({ isDark }: { isDark: boolean }) {
               gridStyles.vertical,
               {
                 left: `${progress * 100}%` as any,
-                // leftmost fully transparent, rightmost fully opaque
-                opacity: isDark
-                  ? progress * 0.95 // dark: 0 → 0.95
-                  : progress * 0.6, // light: 0 → 0.60
+                opacity: isDark ? progress * 0.95 : progress * 0.6,
                 backgroundColor: lineColor,
               },
             ]}
           />
         );
       })}
-      {/* Horizontal lines — consistent low opacity */}
       {Array.from({ length: rows }).map((_, i) => (
         <View
           key={`h-${i}`}
@@ -129,15 +122,8 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       await signUp(formData.email, formData.password, username.trim());
-      Alert.alert(
-        "Account Created! 🎉",
-        `Welcome ${username}! We've sent a verification email to ${formData.email}. Please verify your email to continue.`,
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/auth/verify-email" as any),
-          },
-        ],
+      router.replace(
+        `/auth/verify-email?username=${encodeURIComponent(username.trim())}&email=${encodeURIComponent(formData.email)}` as any,
       );
     } catch (error: any) {
       setLoading(false);
@@ -155,7 +141,6 @@ export default function SignUpScreen() {
     }
   };
 
-  // ── Reusable input renderer ──────────────────────────────────────────────
   const renderInput = (
     label: string,
     icon: string,
@@ -217,8 +202,6 @@ export default function SignUpScreen() {
   );
 
   return (
-    // Fix for keyboard glitch: ScrollView wraps everything OUTSIDE
-    // KeyboardAvoidingView so the card doesn't jump when keyboard opens.
     <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
       <StatusBar style={T.statusBar} />
 
@@ -233,7 +216,6 @@ export default function SignUpScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* ── Card ─────────────────────────────────────────────────── */}
           <View
             style={[
               styles.card,
@@ -246,13 +228,12 @@ export default function SignUpScreen() {
           >
             {/* ── Top banner ─────────────────────────────────────────── */}
             <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
-              {/* Left column */}
               <View style={styles.bannerLeft}>
-                {/* Row 1: circular back button + logo side by side */}
                 <View style={styles.bannerTopRow}>
                   <TouchableOpacity
                     style={[
                       styles.backCircle,
+                      styles.backAbsolute,
                       {
                         backgroundColor: T.backRectBg,
                         borderColor: T.backRectBorder,
@@ -263,7 +244,6 @@ export default function SignUpScreen() {
                     <Ionicons name="arrow-back" size={16} color={T.backArrow} />
                   </TouchableOpacity>
 
-                  {/* Logo — 120×120 equivalent scaled to banner height */}
                   <Image
                     source={require("../../assets/images/logo.png")}
                     style={styles.logoImage}
@@ -273,7 +253,6 @@ export default function SignUpScreen() {
                   />
                 </View>
 
-                {/* Row 2: heading + subtitle pushed a bit lower */}
                 <View style={styles.bannerTextBlock}>
                   <Text style={[styles.bannerTitle, { color: T.titleColor }]}>
                     Get Started
@@ -286,7 +265,6 @@ export default function SignUpScreen() {
                 </View>
               </View>
 
-              {/* Right column: fading grid */}
               <View style={styles.bannerRight}>
                 <GridOverlay isDark={isDark} />
               </View>
@@ -294,7 +272,6 @@ export default function SignUpScreen() {
 
             {/* ── Form ───────────────────────────────────────────────── */}
             <View style={styles.form}>
-              {/* Username (was Full Name) */}
               {renderInput(
                 "Username",
                 "person-outline",
@@ -345,7 +322,6 @@ export default function SignUpScreen() {
                 },
               )}
 
-              {/* ── Button — welcome.tsx pill style ──────────────────── */}
               <View style={styles.buttonSpacer} />
               <TouchableOpacity
                 style={[
@@ -382,7 +358,6 @@ export default function SignUpScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Sign In link */}
               <View style={styles.signInContainer}>
                 <Text style={[styles.signInText, { color: T.signInText }]}>
                   Already have an account?{" "}
@@ -401,25 +376,17 @@ export default function SignUpScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  mainBackground: {
-    flex: 1,
-  },
-  // KAV fills the screen; ScrollView inside handles vertical centering
-  kavWrapper: {
-    flex: 1,
-  },
+  mainBackground: { flex: 1 },
+  kavWrapper: { flex: 1 },
   outerScroll: {
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 48,
   },
-
-  // ── Card ─────────────────────────────────────────────────────────────────
   card: {
-    width: "94%",
+    width: "98%",
     maxWidth: 440,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
@@ -429,22 +396,21 @@ const styles = StyleSheet.create({
     shadowRadius: 32,
     elevation: 20,
   },
-
-  // ── Banner ────────────────────────────────────────────────────────────────
   topBanner: {
     borderRadius: 20,
     margin: 12,
     marginBottom: 0,
-    height: 200, // tall enough for 120px-equiv logo + text
+    height: 220,
     flexDirection: "row",
     overflow: "hidden",
   },
+  backAbsolute: { position: "absolute", left: 0, top: 0, zIndex: 5 },
   bannerLeft: {
     flex: 1,
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 18,
-    justifyContent: "space-between", // row 1 top, text block bottom
+    justifyContent: "space-between",
     zIndex: 2,
   },
   bannerTopRow: {
@@ -452,45 +418,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.sm,
   },
-  // Circular back button — matches welcome.tsx arrow circle style
   backCircle: {
     width: 34,
     height: 34,
-    borderRadius: 17, // full circle
+    borderRadius: 17,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  logoImage: {
-    width: 120, // matches welcome.tsx logo width
-    height: 80, // proportional to banner row height
-  },
-  // Text block pushed toward bottom of banner
-  bannerTextBlock: {
-    marginTop: Spacing.sm,
-  },
+  logoImage: { width: 220, height: 110 },
+  bannerTextBlock: { marginTop: Spacing.sm },
   bannerTitle: {
-    fontSize: FontSizes.xl, // matches welcome.tsx welcomeText fontSize
-    fontWeight: "900", // matches welcome.tsx fontWeight
+    fontSize: FontSizes.xxl,
+    fontWeight: "900",
     letterSpacing: 0.2,
-    marginBottom: 4,
+    marginBottom: 5,
+    marginTop: -15,
   },
-  bannerSubtitle: {
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  bannerRight: {
-    width: 150,
-    overflow: "hidden",
-  },
-
-  // ── Form ─────────────────────────────────────────────────────────────────
+  bannerSubtitle: { fontSize: 16.5, lineHeight: 18, marginBottom: 30 },
+  bannerRight: { width: 150, overflow: "hidden" },
   form: {
     paddingHorizontal: 20,
     paddingTop: 22,
     paddingBottom: 36,
   },
-
   inputContainer: { marginBottom: 14 },
   label: {
     fontSize: 11,
@@ -511,8 +462,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 14 },
   eyeIcon: { padding: 6 },
   errorText: { fontSize: 11, color: "#ff6b6b", marginTop: 4, marginLeft: 4 },
-
-  // ── Button ────────────────────────────────────────────────────────────────
   buttonSpacer: { height: 22 },
   signUpButton: {
     borderRadius: BorderRadius.lg,
@@ -535,8 +484,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // ── Footer link ───────────────────────────────────────────────────────────
   signInContainer: {
     flexDirection: "row",
     justifyContent: "center",

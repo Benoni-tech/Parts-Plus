@@ -124,6 +124,40 @@ export const ZIndex = {
   tooltip: 10000,
 };
 
+// ─── Auth Theme Type ──────────────────────────────────────────────────────────
+// Use this type for any component prop that accepts a theme token object.
+// Avoids TypeScript union narrowing errors caused by statusBar literal types.
+export type AuthThemeType = {
+  mainBg: string;
+  cardBg: string;
+  cardBorder: string;
+  bannerBg: string;
+  backRectBg: string;
+  backRectBorder: string;
+  backArrow: string;
+  titleColor: string;
+  subtitleColor: string;
+  gridLine: string;
+  gridLineTint: string;
+  labelColor: string;
+  inputBg: string;
+  inputBorder: string;
+  inputBorderFocus: string;
+  inputText: string;
+  inputPlaceholder: string;
+  inputIcon: string;
+  checkboxBorder: string;
+  rememberText: string;
+  btnBg: string;
+  btnText: string;
+  btnArrowBg: string;
+  btnArrow: string;
+  signInText: string;
+  signInLink: string;
+  statusBar: "light" | "dark";
+  shadow: string;
+};
+
 // ─── Auth Screen Theme Tokens ─────────────────────────────────────────────────
 // Used by signup, signin, and any other auth screens.
 // Import: import { AuthTheme } from "../../src/constants/colors";
@@ -134,7 +168,7 @@ export const AuthTheme = {
     // Backgrounds
     mainBg: "#0a0a0a", // near-black outer shell
     cardBg: "#161616", // slightly lifted card — not pure black
-    cardBorder: "rgba(255, 255, 255, 0.94)",
+    cardBorder: "rgba(255, 255, 255, 0.10)",
 
     // Banner (top accent block inside card)
     bannerBg: "#222222", // lighter-black for contrast against card
@@ -144,16 +178,16 @@ export const AuthTheme = {
     titleColor: "#ffffff",
     subtitleColor: "rgba(255,255,255,0.60)",
 
-    // Grid lines — tinted warm white so they pop in dark mode
+    // Grid lines
     gridLine: "rgb(255, 255, 255)",
-    gridLineTint: "#e8e0d0", // warm tint baked into the line colour
+    gridLineTint: "#e8e0d0",
 
     // Form labels
     labelColor: "rgba(255,255,255,0.55)",
 
-    // Input fields — clearly visible borders + backgrounds in dark mode
-    inputBg: "#2a2a2a", // distinct mid-grey, NOT transparent
-    inputBorder: "rgba(255,255,255,0.22)", // visible white-ish border
+    // Input fields
+    inputBg: "#2a2a2a",
+    inputBorder: "rgba(255,255,255,0.22)",
     inputBorderFocus: "rgba(255,255,255,0.50)",
     inputText: "#ffffff",
     inputPlaceholder: "rgba(255,255,255,0.38)",
@@ -163,15 +197,15 @@ export const AuthTheme = {
     checkboxBorder: "rgba(255,255,255,0.30)",
     rememberText: "rgba(255,255,255,0.45)",
 
-    // Button — pill style matching welcome.tsx
-    btnBg: "#ffffff",
-    btnText: "#0a0a0a",
-    btnArrowBg: "#0a0a0a",
-    btnArrow: "#ffffff",
+    // Button — orange accent replaces white, arrow flips to contrast
+    btnBg: "#ffa303", // orange pill background
+    btnText: "#0a0a0a", // black text on orange
+    btnArrowBg: "#ffa303", // orange arrow circle
+    btnArrow: "#0a0a0a", // black arrow icon on orange
 
-    // Sign-in link
+    // Links
     signInText: "rgba(255,255,255,0.45)",
-    signInLink: "#ffffff",
+    signInLink: "#ffa303", // orange accent for action links
 
     statusBar: "light" as const,
     shadow: "#000000",
@@ -179,16 +213,16 @@ export const AuthTheme = {
 
   light: {
     // Backgrounds
-    mainBg: "#efefef",
+    mainBg: "#ffffff",
     cardBg: "#ffffff",
     cardBorder: "rgba(0,0,0,0.07)",
 
     // Banner
-    bannerBg: "#111111",
+    bannerBg: "#182F48",
     backRectBg: "rgba(255,255,255,0.15)",
     backRectBorder: "rgba(255,255,255,0.30)",
     backArrow: "#ffffff",
-    titleColor: "#ffffff",
+    titleColor: "#ffa303",
     subtitleColor: "rgba(255,255,255,0.65)",
 
     // Grid lines
@@ -211,12 +245,12 @@ export const AuthTheme = {
     rememberText: "#999999",
 
     // Button
-    btnBg: "#111111",
+    btnBg: "#182F48",
     btnText: "#ffffff",
-    btnArrowBg: "#ffffff",
-    btnArrow: "#111111",
+    btnArrowBg: "#ffa303",
+    btnArrow: "#182F48",
 
-    // Sign-in link
+    // Links
     signInText: "#999999",
     signInLink: "#111111",
 

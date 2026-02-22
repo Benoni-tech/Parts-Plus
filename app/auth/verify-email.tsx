@@ -1,48 +1,103 @@
-// app/auth/verify-email.tsx - EMAIL VERIFICATION SCREEN
+// app/auth/verify-email.tsx
 
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
-import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp, ZoomIn } from "react-native-reanimated";
 import {
+  AuthTheme,
   BorderRadius,
-  Colors,
-  FontSizes,
-  Spacing,
+  FontSizes
 } from "../../src/constants/colors";
 import { useAuth } from "../../src/hooks/useAuth";
 
-const { width } = Dimensions.get("window");
+// ─── Grid overlay ─────────────────────────────────────────────────────────────
+function GridOverlay({ isDark }: { isDark: boolean }) {
+  const cols = 8;
+  const rows = 5;
+  const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
+  return (
+    <View style={gridStyles.container} pointerEvents="none">
+      {Array.from({ length: cols }).map((_, i) => {
+        const progress = i / (cols - 1);
+        return (
+          <View
+            key={`v-${i}`}
+            style={[
+              gridStyles.line,
+              gridStyles.vertical,
+              {
+                left: `${progress * 100}%` as any,
+                opacity: isDark ? progress * 0.95 : progress * 0.6,
+                backgroundColor: lineColor,
+              },
+            ]}
+          />
+        );
+      })}
+      {Array.from({ length: rows }).map((_, i) => (
+        <View
+          key={`h-${i}`}
+          style={[
+            gridStyles.line,
+            gridStyles.horizontal,
+            {
+              top: `${(i / (rows - 1)) * 100}%` as any,
+              opacity: isDark ? 0.3 : 0.22,
+              backgroundColor: lineColor,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
 
-export default function VerifyEmail() {
+const gridStyles = StyleSheet.create({
+  container: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+  line: { position: "absolute" },
+  vertical: { top: 0, bottom: 0, width: 1 },
+  horizontal: { left: 0, right: 0, height: 1 },
+});
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+export default function VerifyEmailScreen() {
   const router = useRouter();
-  const { user, checkEmailVerified, sendEmailVerification } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const { username, email } = useLocalSearchParams<{
+    username: string;
+    email: string;
+  }>();
+  const { user, sendEmailVerification, checkEmailVerified, refreshUser } =
+    useAuth();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const T = isDark ? AuthTheme.dark : AuthTheme.light;
+
   const [resending, setResending] = useState(false);
+  const [checking, setChecking] = useState(false);
 
-  const handleCheckVerification = async () => {
-    if (!user) {
-      Alert.alert("Error", "No user found");
-      return;
-    }
+  const displayEmail = email ?? user?.email ?? "";
+  const displayUsername = username ?? "";
 
-    setLoading(true);
+  const handleVerified = async () => {
+    setChecking(true);
     try {
+      // refreshUser reloads Firebase user AND updates context state
+      await refreshUser();
       const isVerified = await checkEmailVerified();
-
       if (isVerified) {
-        // Show success and navigate
-        router.replace("/auth/verification-success");
+        router.push("/auth/verification-success" as any);
       } else {
         Alert.alert(
           "Not Verified Yet",
@@ -50,9 +105,12 @@ export default function VerifyEmail() {
         );
       }
     } catch (error: any) {
-      Alert.alert("Error", "Could not check verification status");
+      Alert.alert(
+        "Error",
+        "Could not check verification status. Please try again.",
+      );
     } finally {
-      setLoading(false);
+      setChecking(false);
     }
   };
 
@@ -60,10 +118,7 @@ export default function VerifyEmail() {
     setResending(true);
     try {
       await sendEmailVerification();
-      Alert.alert(
-        "Success",
-        "Verification email sent! Please check your inbox.",
-      );
+      Alert.alert("Sent!", "Verification email sent. Please check your inbox.");
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -75,199 +130,327 @@ export default function VerifyEmail() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
+      <StatusBar style={T.statusBar} />
 
-      <Animated.View entering={FadeIn.duration(800)} style={styles.content}>
-        {/* Mail Icon */}
+      <ScrollView
+        contentContainerStyle={styles.outerScroll}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <Animated.View
-          entering={FadeInUp.duration(600).delay(200)}
-          style={styles.iconContainer}
+          entering={FadeIn.duration(500)}
+          style={[
+            styles.card,
+            {
+              backgroundColor: T.cardBg,
+              borderColor: T.cardBorder,
+              shadowColor: T.shadow,
+            },
+          ]}
         >
-          <View style={styles.mailCircle}>
-            <Ionicons
-              name="mail-open-outline"
-              size={80}
-              color={Colors.primary}
-            />
+          {/* ── Top banner ───────────────────────────────────────────── */}
+          <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
+            <View style={styles.bannerLeft}>
+              <Animated.View
+                entering={ZoomIn.duration(500).delay(200)}
+                style={styles.bannerIconRow}
+              >
+                <View
+                  style={[
+                    styles.iconCircle,
+                    { backgroundColor: `${T.btnArrowBg}22` },
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-open-outline"
+                    size={44}
+                    color={T.btnArrowBg}
+                  />
+                </View>
+              </Animated.View>
+
+              <View style={styles.bannerTextBlock}>
+                <Animated.Text
+                  entering={FadeInUp.duration(500).delay(300)}
+                  style={[styles.bannerTitle, { color: T.titleColor }]}
+                >
+                  {displayUsername
+                    ? `Welcome, ${displayUsername}!`
+                    : "Check Your Email"}
+                </Animated.Text>
+                <Animated.Text
+                  entering={FadeInUp.duration(500).delay(400)}
+                  style={[styles.bannerSubtitle, { color: T.subtitleColor }]}
+                >
+                  Your account has been created
+                </Animated.Text>
+              </View>
+            </View>
+
+            <View style={styles.bannerRight}>
+              <GridOverlay isDark={isDark} />
+            </View>
           </View>
-        </Animated.View>
 
-        {/* Title */}
-        <Animated.Text
-          entering={FadeInUp.duration(600).delay(400)}
-          style={styles.title}
-        >
-          Verify Your Email
-        </Animated.Text>
+          {/* ── Body ─────────────────────────────────────────────────── */}
+          <View style={styles.body}>
+            <Animated.Text
+              entering={FadeInUp.duration(500).delay(450)}
+              style={[styles.message, { color: T.labelColor }]}
+            >
+              We've sent a verification link to your email address. Please check
+              your inbox and click the link to activate your account.
+            </Animated.Text>
 
-        {/* Message */}
-        <Animated.Text
-          entering={FadeInUp.duration(600).delay(600)}
-          style={styles.message}
-        >
-          We've sent a verification link to
-        </Animated.Text>
+            {/* Email + status card */}
+            <Animated.View
+              entering={FadeInUp.duration(500).delay(500)}
+              style={[
+                styles.detailsContainer,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(255,255,255,0.04)"
+                    : "rgba(0,0,0,0.03)",
+                  borderColor: isDark
+                    ? "rgba(255,255,255,0.10)"
+                    : "rgba(0,0,0,0.07)",
+                },
+              ]}
+            >
+              <View style={styles.detailRow}>
+                <View
+                  style={[
+                    styles.detailIconWrap,
+                    { backgroundColor: `${T.btnArrowBg}22` },
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={18}
+                    color={T.btnArrowBg}
+                  />
+                </View>
+                <Text
+                  style={[styles.detailText, { color: T.inputText }]}
+                  numberOfLines={1}
+                >
+                  {displayEmail}
+                </Text>
+              </View>
 
-        <Animated.Text
-          entering={FadeInUp.duration(600).delay(700)}
-          style={styles.email}
-        >
-          {user?.email}
-        </Animated.Text>
+              <View
+                style={[
+                  styles.detailDivider,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.07)"
+                      : "rgba(0,0,0,0.06)",
+                  },
+                ]}
+              />
 
-        <Animated.Text
-          entering={FadeInUp.duration(600).delay(800)}
-          style={styles.instructions}
-        >
-          Please check your inbox and click the link to verify your account.
-        </Animated.Text>
-
-        {/* Check Verification Button */}
-        <Animated.View
-          entering={FadeInUp.duration(600).delay(1000)}
-          style={styles.buttonContainer}
-        >
-          <TouchableOpacity
-            style={styles.verifyButton}
-            onPress={handleCheckVerification}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color={Colors.text.primary} />
-            ) : (
-              <>
-                <Text style={styles.verifyButtonText}>
-                  I've Verified My Email
+              <View style={styles.detailRow}>
+                <View
+                  style={[
+                    styles.detailIconWrap,
+                    { backgroundColor: "rgba(255,163,3,0.15)" },
+                  ]}
+                >
+                  <Ionicons name="time-outline" size={18} color="#ffa303" />
+                </View>
+                <Text style={[styles.detailText, { color: T.inputText }]}>
+                  Awaiting verification
                 </Text>
                 <Ionicons
-                  name="checkmark-circle"
-                  size={24}
-                  color={Colors.text.primary}
+                  name="ellipsis-horizontal"
+                  size={16}
+                  color="#ffa303"
+                  style={styles.detailCheck}
                 />
-              </>
-            )}
-          </TouchableOpacity>
+              </View>
+            </Animated.View>
 
-          {/* Resend Link */}
-          <TouchableOpacity
-            style={styles.resendButton}
-            onPress={handleResend}
-            disabled={resending}
-          >
-            {resending ? (
-              <ActivityIndicator color={Colors.primary} size="small" />
-            ) : (
-              <Text style={styles.resendText}>
-                Didn't receive the email?{" "}
-                <Text style={styles.resendLink}>Resend</Text>
-              </Text>
-            )}
-          </TouchableOpacity>
+            {/* ── I've Verified button ── */}
+            <Animated.View entering={FadeInUp.duration(500).delay(600)}>
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: T.btnBg, shadowColor: T.shadow },
+                  checking && { opacity: 0.7 },
+                ]}
+                onPress={handleVerified}
+                activeOpacity={0.8}
+                disabled={checking}
+              >
+                {checking ? (
+                  <ActivityIndicator color={T.btnText} style={{ flex: 1 }} />
+                ) : (
+                  <>
+                    <Text
+                      style={[styles.primaryButtonText, { color: T.btnText }]}
+                    >
+                      I've Verified My Email
+                    </Text>
+                    <View
+                      style={[
+                        styles.arrowCircle,
+                        { backgroundColor: T.btnArrowBg },
+                      ]}
+                    >
+                      <Ionicons
+                        name="arrow-forward"
+                        size={18}
+                        color={T.btnArrow}
+                      />
+                    </View>
+                  </>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
 
-          {/* Back to Sign In */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.replace("/auth/signin")}
-          >
-            <Text style={styles.backText}>Back to Sign In</Text>
-          </TouchableOpacity>
+            {/* ── Resend ── */}
+            <Animated.View
+              entering={FadeInUp.duration(500).delay(700)}
+              style={styles.resendRow}
+            >
+              <TouchableOpacity
+                onPress={handleResend}
+                disabled={resending}
+                style={styles.resendButton}
+              >
+                {resending ? (
+                  <ActivityIndicator color={T.btnArrowBg} size="small" />
+                ) : (
+                  <Text style={[styles.resendText, { color: T.labelColor }]}>
+                    Didn't receive it?{" "}
+                    <Text style={{ color: T.btnArrowBg, fontWeight: "700" }}>
+                      Resend Email
+                    </Text>
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* ── Back to sign in ── */}
+            <Animated.View entering={FadeInUp.duration(500).delay(800)}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.replace("/auth/signin")}
+              >
+                <Text style={[styles.backText, { color: T.subtitleColor }]}>
+                  Back to Sign In
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </Animated.View>
-      </Animated.View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  content: {
-    flex: 1,
+  mainBackground: { flex: 1 },
+  outerScroll: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: 48,
   },
-  iconContainer: {
-    marginBottom: Spacing.xxl,
+  card: {
+    width: "98%",
+    maxWidth: 440,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.22,
+    shadowRadius: 32,
+    elevation: 20,
   },
-  mailCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: `${Colors.primary}15`,
+  topBanner: {
+    borderRadius: 20,
+    margin: 12,
+    marginBottom: 0,
+    height: 220,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  bannerLeft: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
+    justifyContent: "space-between",
+    zIndex: 2,
+  },
+  bannerIconRow: { flexDirection: "row", alignItems: "center" },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: Colors.text.white,
-    marginBottom: Spacing.md,
-    textAlign: "center",
+  bannerTextBlock: {},
+  bannerTitle: {
+    fontSize: FontSizes.xxl,
+    fontWeight: "900",
+    letterSpacing: 0.2,
+    marginBottom: 5,
+    marginTop: -15,
   },
-  message: {
-    fontSize: FontSizes.md,
-    color: Colors.text.light,
-    textAlign: "center",
-    marginBottom: Spacing.sm,
-  },
-  email: {
-    fontSize: FontSizes.lg,
-    color: Colors.primary,
-    fontWeight: "600",
-    marginBottom: Spacing.md,
-    textAlign: "center",
-  },
-  instructions: {
-    fontSize: FontSizes.md,
-    color: Colors.text.light,
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: Spacing.xxl,
-    paddingHorizontal: Spacing.md,
-  },
-  buttonContainer: {
-    width: "100%",
-    maxWidth: 320,
-  },
-  verifyButton: {
-    backgroundColor: Colors.primary,
+  bannerSubtitle: { fontSize: 16.5, lineHeight: 18, marginBottom: 30 },
+  bannerRight: { width: 150, overflow: "hidden" },
+  body: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 36 },
+  message: { fontSize: FontSizes.sm, lineHeight: 20, marginBottom: 20 },
+  detailsContainer: {
     borderRadius: BorderRadius.md,
-    height: 56,
+    borderWidth: 1,
+    marginBottom: 24,
+    overflow: "hidden",
+  },
+  detailRow: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  detailDivider: { height: 1, marginHorizontal: 16 },
+  detailIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     justifyContent: "center",
-    gap: 8,
-    marginBottom: Spacing.lg,
+    alignItems: "center",
+    marginRight: 12,
   },
-  verifyButtonText: {
-    fontSize: FontSizes.lg,
-    color: Colors.text.primary,
-    fontWeight: "600",
+  detailText: { fontSize: FontSizes.sm, fontWeight: "500", flex: 1 },
+  detailCheck: { marginLeft: 8 },
+  primaryButton: {
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  resendButton: {
-    paddingVertical: Spacing.md,
+  primaryButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  arrowCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
     alignItems: "center",
   },
-  resendText: {
-    fontSize: FontSizes.sm,
-    color: Colors.text.light,
-    textAlign: "center",
-  },
-  resendLink: {
-    color: Colors.primary,
-    fontWeight: "700",
-  },
-  backButton: {
-    marginTop: Spacing.lg,
-    paddingVertical: Spacing.md,
-    alignItems: "center",
-  },
-  backText: {
-    fontSize: FontSizes.md,
-    color: Colors.text.light,
-  },
+  resendRow: { alignItems: "center", marginTop: 16 },
+  resendButton: { paddingVertical: 8 },
+  resendText: { fontSize: FontSizes.sm, textAlign: "center" },
+  backButton: { marginTop: 12, paddingVertical: 8, alignItems: "center" },
+  backText: { fontSize: FontSizes.sm },
 });
