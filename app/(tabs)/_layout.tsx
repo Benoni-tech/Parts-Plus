@@ -1,19 +1,34 @@
-// app/tabs/_layout.tsx
+// app/(tabs)/_layout.tsx
 
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../../src/constants/colors";
 
 export default function TabsLayout() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const tabBarBg = isDark ? "#161616" : "#ffffff";
+  const tabBarBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const shadowColor = isDark ? "#000000" : "#00000018";
+  const inactiveColor = isDark ? Colors.text.secondary : "#aaaaaa";
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.text.secondary,
-        tabBarStyle: styles.tabBar,
+        tabBarInactiveTintColor: inactiveColor,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            backgroundColor: tabBarBg,
+            borderColor: tabBarBorder,
+            shadowColor,
+          },
+        ],
         tabBarItemStyle: styles.tabItem,
         tabBarLabelStyle: styles.label,
       }}
@@ -52,19 +67,19 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     position: "absolute",
-    bottom: 40,
-    left: 40,
-    right: 40,
+    bottom: 80,
+    left: 0,
+    right: 0,
     height: 64,
-    backgroundColor: Colors.background,
+    marginHorizontal: 50,
     borderRadius: 32,
-    paddingHorizontal: 12,
-    shadowColor: "#000",
+    borderWidth: 1,
+    paddingHorizontal: 2,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 10,
-    borderTopWidth: 0,
+    borderTopWidth: 1,
   },
   tabItem: {
     height: 50,
