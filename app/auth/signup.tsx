@@ -122,9 +122,8 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       await signUp(formData.email, formData.password, username.trim());
-      router.replace(
-        `/auth/verify-email?username=${encodeURIComponent(username.trim())}&email=${encodeURIComponent(formData.email)}` as any,
-      );
+      // ✅ No navigation here — _layout.tsx detects the new unverified user
+      // via onAuthStateChanged and routes to /auth/verify-email automatically.
     } catch (error: any) {
       setLoading(false);
       let msg = "Failed to create account";
@@ -381,7 +380,6 @@ const styles = StyleSheet.create({
   kavWrapper: { flex: 1 },
   outerScroll: {
     flexGrow: 1,
-
     alignItems: "center",
     paddingVertical: 40,
   },

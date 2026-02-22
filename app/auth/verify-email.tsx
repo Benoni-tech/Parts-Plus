@@ -1,9 +1,9 @@
 // app/auth/verify-email.tsx
 
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -70,44 +70,53 @@ const gridStyles = StyleSheet.create({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function VerifyEmailScreen() {
   const router = useRouter();
-  const { username, email } = useLocalSearchParams<{
-    username: string;
-    email: string;
-  }>();
-  const { user, sendEmailVerification, checkEmailVerified, refreshUser } =
-    useAuth();
+  const {
+    user,
+    userData,
+    sendEmailVerification,
+    checkEmailVerified,
+    refreshUser,
+  } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
 
   const [resending, setResending] = useState(false);
-  const [checking, setChecking] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const displayEmail = email ?? user?.email ?? "";
-  const displayUsername = username ?? "";
+  // ── Read from context — no route params needed ──────────────────────────────
+  const displayEmail = user?.email ?? "";
+  const displayUsername = userData?.username ?? "";
 
-  const handleVerified = async () => {
-    setChecking(true);
-    try {
-      // refreshUser reloads Firebase user AND updates context state
-      await refreshUser();
-      const isVerified = await checkEmailVerified();
-      if (isVerified) {
-        router.push("/auth/verification-success" as any);
-      } else {
-        Alert.alert(
-          "Not Verified Yet",
-          "Please check your email and click the verification link, then try again.",
-        );
-      }
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        "Could not check verification status. Please try again.",
-      );
-    } finally {
-      setChecking(false);
+  // ── Poll for verification every 4 seconds ──────────────────────────────────
+  useEffect(() => {
+    // If already verified when screen mounts (e.g. user returns to app)
+    if (user?.emailVerified) {
+      setIsVerified(true);
+      return;
     }
+
+    pollRef.current = setInterval(async () => {
+      try {
+        await refreshUser();
+        const verified = await checkEmailVerified();
+        if (verified) {
+          setIsVerified(true);
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      } catch (_) {
+        // silently ignore poll errors — will retry next interval
+      }
+    }, 4000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const handleGoHome = () => {
+    router.replace("/(tabs)" as any);
   };
 
   const handleResend = async () => {
@@ -155,13 +164,17 @@ export default function VerifyEmailScreen() {
                 <View
                   style={[
                     styles.iconCircle,
-                    { backgroundColor: `${T.btnArrowBg}22` },
+                    {
+                      backgroundColor: isVerified
+                        ? "rgba(34,197,94,0.15)"
+                        : `${T.btnArrowBg}22`,
+                    },
                   ]}
                 >
                   <Ionicons
-                    name="mail-open-outline"
+                    name={isVerified ? "checkmark-circle" : "mail-open-outline"}
                     size={44}
-                    color={T.btnArrowBg}
+                    color={isVerified ? "#22c55e" : T.btnArrowBg}
                   />
                 </View>
               </Animated.View>
@@ -172,14 +185,16 @@ export default function VerifyEmailScreen() {
                   style={[styles.bannerTitle, { color: T.titleColor }]}
                 >
                   {displayUsername
-                    ? `Welcome, ${displayUsername}!`
+                    ? `Hi, ${displayUsername}!`
                     : "Check Your Email"}
                 </Animated.Text>
                 <Animated.Text
                   entering={FadeInUp.duration(500).delay(400)}
                   style={[styles.bannerSubtitle, { color: T.subtitleColor }]}
                 >
-                  Your account has been created
+                  {isVerified
+                    ? "Email verified!"
+                    : "Your account has been created"}
                 </Animated.Text>
               </View>
             </View>
@@ -195,8 +210,9 @@ export default function VerifyEmailScreen() {
               entering={FadeInUp.duration(500).delay(450)}
               style={[styles.message, { color: T.labelColor }]}
             >
-              We've sent a verification link to your email address. Please check
-              your inbox and click the link to activate your account.
+              {isVerified
+                ? "Your email has been verified. You're all set — tap the button below to start streaming."
+                : "We've sent a verification link to your email address. Click the link in your inbox to activate your account. The button below will unlock automatically once verified."}
             </Animated.Text>
 
             {/* Email + status card */}
@@ -250,95 +266,113 @@ export default function VerifyEmailScreen() {
                 <View
                   style={[
                     styles.detailIconWrap,
-                    { backgroundColor: "rgba(255,163,3,0.15)" },
+                    {
+                      backgroundColor: isVerified
+                        ? "rgba(34,197,94,0.15)"
+                        : "rgba(255,163,3,0.15)",
+                    },
                   ]}
                 >
-                  <Ionicons name="time-outline" size={18} color="#ffa303" />
+                  <Ionicons
+                    name={
+                      isVerified ? "shield-checkmark-outline" : "time-outline"
+                    }
+                    size={18}
+                    color={isVerified ? "#22c55e" : "#ffa303"}
+                  />
                 </View>
                 <Text style={[styles.detailText, { color: T.inputText }]}>
-                  Awaiting verification
+                  {isVerified ? "Email verified" : "Awaiting verification"}
                 </Text>
                 <Ionicons
-                  name="ellipsis-horizontal"
+                  name={isVerified ? "checkmark" : "ellipsis-horizontal"}
                   size={16}
-                  color="#ffa303"
+                  color={isVerified ? "#22c55e" : "#ffa303"}
                   style={styles.detailCheck}
                 />
               </View>
             </Animated.View>
 
-            {/* ── I've Verified button ── */}
+            {/* ── Go to Home button ── */}
             <Animated.View entering={FadeInUp.duration(500).delay(600)}>
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
-                  { backgroundColor: T.btnBg, shadowColor: T.shadow },
-                  checking && { opacity: 0.7 },
+                  isVerified
+                    ? { backgroundColor: T.btnBg, shadowColor: T.shadow }
+                    : styles.buttonDisabled,
                 ]}
-                onPress={handleVerified}
-                activeOpacity={0.8}
-                disabled={checking}
+                onPress={handleGoHome}
+                activeOpacity={isVerified ? 0.8 : 1}
+                disabled={!isVerified}
               >
-                {checking ? (
-                  <ActivityIndicator color={T.btnText} style={{ flex: 1 }} />
-                ) : (
-                  <>
-                    <Text
-                      style={[styles.primaryButtonText, { color: T.btnText }]}
-                    >
-                      I've Verified My Email
-                    </Text>
-                    <View
-                      style={[
-                        styles.arrowCircle,
-                        { backgroundColor: T.btnArrowBg },
-                      ]}
-                    >
-                      <Ionicons
-                        name="arrow-forward"
-                        size={18}
-                        color={T.btnArrow}
-                      />
-                    </View>
-                  </>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* ── Resend ── */}
-            <Animated.View
-              entering={FadeInUp.duration(500).delay(700)}
-              style={styles.resendRow}
-            >
-              <TouchableOpacity
-                onPress={handleResend}
-                disabled={resending}
-                style={styles.resendButton}
-              >
-                {resending ? (
-                  <ActivityIndicator color={T.btnArrowBg} size="small" />
-                ) : (
-                  <Text style={[styles.resendText, { color: T.labelColor }]}>
-                    Didn't receive it?{" "}
-                    <Text style={{ color: T.btnArrowBg, fontWeight: "700" }}>
-                      Resend Email
-                    </Text>
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* ── Back to sign in ── */}
-            <Animated.View entering={FadeInUp.duration(500).delay(800)}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.replace("/auth/signin")}
-              >
-                <Text style={[styles.backText, { color: T.subtitleColor }]}>
-                  Back to Sign In
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { color: isVerified ? T.btnText : "#9ca3af" },
+                  ]}
+                >
+                  Go to Home
                 </Text>
+                <View
+                  style={[
+                    styles.arrowCircle,
+                    {
+                      backgroundColor: isVerified
+                        ? T.btnArrowBg
+                        : isDark
+                          ? "rgba(255,255,255,0.08)"
+                          : "rgba(0,0,0,0.08)",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={isVerified ? T.btnArrow : "#9ca3af"}
+                  />
+                </View>
               </TouchableOpacity>
             </Animated.View>
+
+            {/* ── Resend — hidden once verified ── */}
+            {!isVerified && (
+              <Animated.View
+                entering={FadeInUp.duration(500).delay(700)}
+                style={styles.resendRow}
+              >
+                <TouchableOpacity
+                  onPress={handleResend}
+                  disabled={resending}
+                  style={styles.resendButton}
+                >
+                  {resending ? (
+                    <ActivityIndicator color={T.btnArrowBg} size="small" />
+                  ) : (
+                    <Text style={[styles.resendText, { color: T.labelColor }]}>
+                      Didn't receive it?{" "}
+                      <Text style={{ color: T.btnArrowBg, fontWeight: "700" }}>
+                        Resend Email
+                      </Text>
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+
+            {/* ── Back to sign in — hidden once verified ── */}
+            {!isVerified && (
+              <Animated.View entering={FadeInUp.duration(500).delay(800)}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => router.replace("/auth/signin")}
+                >
+                  <Text style={[styles.backText, { color: T.subtitleColor }]}>
+                    Back to Sign In
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
           </View>
         </Animated.View>
       </ScrollView>
@@ -350,7 +384,6 @@ const styles = StyleSheet.create({
   mainBackground: { flex: 1 },
   outerScroll: {
     flexGrow: 1,
-
     alignItems: "center",
     paddingVertical: 48,
   },
@@ -435,6 +468,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 12,
     elevation: 6,
+  },
+  buttonDisabled: {
+    backgroundColor: "rgba(156,163,175,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(156,163,175,0.25)",
+    shadowOpacity: 0,
+    elevation: 0,
   },
   primaryButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
   arrowCircle: {
