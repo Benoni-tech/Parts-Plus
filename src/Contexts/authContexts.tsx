@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return null;
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      if (__DEV__) console.error("Error fetching user data:", error);
       return null;
     }
   };
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
-   * Sign up (email, password, username)
+   * Sign up
    */
   const signUp = async (
     email: string,
@@ -91,7 +91,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       await authService.createUser(email, password, username);
 
-      // ✅ FIX: ensure Firestore userData is available immediately
       const currentUser = auth.currentUser;
       if (currentUser) {
         const data = await fetchUserData(currentUser.uid);
@@ -141,6 +140,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  /**
+   * Delete account — clears Firestore then Firebase Auth
+   * onAuthStateChanged fires after, resetting all state automatically
+   */
+  const deleteAccount = async (): Promise<void> => {
+    try {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      await authService.deleteAccount();
+      // onAuthStateChanged will fire and reset user + userData to null
+    } catch (error: any) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: error.message,
+      }));
+      throw error;
+    }
+  };
+
   const sendEmailVerification = async (): Promise<void> => {
     await authService.sendEmailVerification();
   };
@@ -171,6 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signIn,
     signOut,
+    deleteAccount,
     sendEmailVerification,
     checkEmailVerified,
     resetPassword,

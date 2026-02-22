@@ -5,22 +5,22 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    useColorScheme,
-    View,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  useColorScheme,
+  View,
 } from "react-native";
 import {
-    AuthTheme,
-    AuthThemeType,
-    BorderRadius,
-    FontSizes,
-    Spacing,
+  AuthTheme,
+  AuthThemeType,
+  BorderRadius,
+  FontSizes,
+  Spacing,
 } from "../../constants/colors";
 import GridOverlay from "./GridOverlay";
 
@@ -265,16 +265,16 @@ export default function FAQScreen() {
 
 const styles = StyleSheet.create({
   mainBackground: { flex: 1 },
-  topBanner: { height: 220, flexDirection: "row", overflow: "hidden" },
+  topBanner: { height: 280, flexDirection: "row", overflow: "hidden" },
   bannerLeft: {
     flex: 1,
     paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 18,
+    paddingTop: 88,
+    paddingBottom: 5,
     justifyContent: "space-between",
     zIndex: 2,
   },
-  backAbsolute: { position: "absolute", left: 18, top: 18, zIndex: 5 },
+  backAbsolute: { position: "absolute", left: 18, top: 68, zIndex: 5 },
   backCircle: {
     width: 34,
     height: 34,

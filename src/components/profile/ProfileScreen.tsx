@@ -4,11 +4,11 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    useColorScheme,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  View,
 } from "react-native";
 import { AuthTheme } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
       <StatusBar style={T.statusBar} />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* ── Banner ─────────────────────────────────────────────────────── */}
+        {/*Banner*/}
         <ProfileBanner
           user={user}
           isDark={isDark}
@@ -75,5 +75,7 @@ const styles = StyleSheet.create({
   },
   sectionsContainer: {
     paddingHorizontal: 16,
+    /* paddingVertical: 24, */
+    marginBottom: 93,
   },
 });

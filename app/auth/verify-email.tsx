@@ -76,6 +76,7 @@ export default function VerifyEmailScreen() {
     sendEmailVerification,
     checkEmailVerified,
     refreshUser,
+    deleteAccount,
   } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -83,15 +84,14 @@ export default function VerifyEmailScreen() {
 
   const [resending, setResending] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasNavigated = useRef(false);
 
-  // ── Read from context — no route params needed ──────────────────────────────
-  const displayEmail = user?.email ?? "";
-  const displayUsername = userData?.username ?? "";
+  const displayUsername = userData?.username ?? user?.displayName ?? "";
 
-  // ── Poll for verification every 4 seconds ──────────────────────────────────
+  // Poll every 10 seconds
   useEffect(() => {
-    // If already verified when screen mounts (e.g. user returns to app)
     if (user?.emailVerified) {
       setIsVerified(true);
       return;
@@ -101,14 +101,20 @@ export default function VerifyEmailScreen() {
       try {
         await refreshUser();
         const verified = await checkEmailVerified();
-        if (verified) {
+        if (verified && !hasNavigated.current) {
           setIsVerified(true);
           if (pollRef.current) clearInterval(pollRef.current);
+
+          // 2 second delay so user sees button activate before routing
+          setTimeout(() => {
+            hasNavigated.current = true;
+            router.replace("/(tabs)" as any);
+          }, 2000);
         }
       } catch (_) {
-        // silently ignore poll errors — will retry next interval
+        // silently ignore — retries on next interval
       }
-    }, 4000);
+    }, 10000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -116,6 +122,8 @@ export default function VerifyEmailScreen() {
   }, []);
 
   const handleGoHome = () => {
+    if (!isVerified) return;
+    hasNavigated.current = true;
     router.replace("/(tabs)" as any);
   };
 
@@ -123,7 +131,10 @@ export default function VerifyEmailScreen() {
     setResending(true);
     try {
       await sendEmailVerification();
-      Alert.alert("Sent!", "Verification email sent. Please check your inbox.");
+      Alert.alert(
+        "Sent!",
+        "Verification email sent. If you don't see it, check your spam folder.",
+      );
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -132,6 +143,34 @@ export default function VerifyEmailScreen() {
     } finally {
       setResending(false);
     }
+  };
+
+  const handleStartOver = () => {
+    Alert.alert(
+      "Start Over?",
+      "This will permanently delete your current account. You'll need to sign up again with the correct email. Are you sure?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete & Start Over",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingAccount(true);
+            try {
+              if (pollRef.current) clearInterval(pollRef.current);
+              await deleteAccount();
+              router.replace("/auth/signup" as any);
+            } catch (error: any) {
+              setDeletingAccount(false);
+              Alert.alert(
+                "Error",
+                error.message || "Failed to delete account. Please try again.",
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -193,7 +232,7 @@ export default function VerifyEmailScreen() {
                   style={[styles.bannerSubtitle, { color: T.subtitleColor }]}
                 >
                   {isVerified
-                    ? "Email verified!"
+                    ? "You're all verified!"
                     : "Your account has been created"}
                 </Animated.Text>
               </View>
@@ -206,95 +245,18 @@ export default function VerifyEmailScreen() {
 
           {/* ── Body ─────────────────────────────────────────────────── */}
           <View style={styles.body}>
+            {/* ── Main message ── */}
             <Animated.Text
               entering={FadeInUp.duration(500).delay(450)}
               style={[styles.message, { color: T.labelColor }]}
             >
               {isVerified
                 ? "Your email has been verified. You're all set — tap the button below to start streaming."
-                : "We've sent a verification link to your email address. Click the link in your inbox to activate your account. The button below will unlock automatically once verified."}
+                : `We've sent a verification link to ${user?.email ?? "your email"}. Click the link to activate your account and the button below will unlock automatically.\n\nCan't find it? Check your spam folder.`}
             </Animated.Text>
 
-            {/* Email + status card */}
-            <Animated.View
-              entering={FadeInUp.duration(500).delay(500)}
-              style={[
-                styles.detailsContainer,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.04)"
-                    : "rgba(0,0,0,0.03)",
-                  borderColor: isDark
-                    ? "rgba(255,255,255,0.10)"
-                    : "rgba(0,0,0,0.07)",
-                },
-              ]}
-            >
-              <View style={styles.detailRow}>
-                <View
-                  style={[
-                    styles.detailIconWrap,
-                    { backgroundColor: `${T.btnArrowBg}22` },
-                  ]}
-                >
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color={T.btnArrowBg}
-                  />
-                </View>
-                <Text
-                  style={[styles.detailText, { color: T.inputText }]}
-                  numberOfLines={1}
-                >
-                  {displayEmail}
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.detailDivider,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.07)"
-                      : "rgba(0,0,0,0.06)",
-                  },
-                ]}
-              />
-
-              <View style={styles.detailRow}>
-                <View
-                  style={[
-                    styles.detailIconWrap,
-                    {
-                      backgroundColor: isVerified
-                        ? "rgba(34,197,94,0.15)"
-                        : "rgba(255,163,3,0.15)",
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      isVerified ? "shield-checkmark-outline" : "time-outline"
-                    }
-                    size={18}
-                    color={isVerified ? "#22c55e" : "#ffa303"}
-                  />
-                </View>
-                <Text style={[styles.detailText, { color: T.inputText }]}>
-                  {isVerified ? "Email verified" : "Awaiting verification"}
-                </Text>
-                <Ionicons
-                  name={isVerified ? "checkmark" : "ellipsis-horizontal"}
-                  size={16}
-                  color={isVerified ? "#22c55e" : "#ffa303"}
-                  style={styles.detailCheck}
-                />
-              </View>
-            </Animated.View>
-
             {/* ── Go to Home button ── */}
-            <Animated.View entering={FadeInUp.duration(500).delay(600)}>
+            <Animated.View entering={FadeInUp.duration(500).delay(550)}>
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
@@ -338,7 +300,7 @@ export default function VerifyEmailScreen() {
             {/* ── Resend — hidden once verified ── */}
             {!isVerified && (
               <Animated.View
-                entering={FadeInUp.duration(500).delay(700)}
+                entering={FadeInUp.duration(500).delay(650)}
                 style={styles.resendRow}
               >
                 <TouchableOpacity
@@ -360,16 +322,25 @@ export default function VerifyEmailScreen() {
               </Animated.View>
             )}
 
-            {/* ── Back to sign in — hidden once verified ── */}
+            {/* ── Start over — hidden once verified ── */}
             {!isVerified && (
-              <Animated.View entering={FadeInUp.duration(500).delay(800)}>
+              <Animated.View
+                entering={FadeInUp.duration(500).delay(750)}
+                style={styles.startOverRow}
+              >
                 <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => router.replace("/auth/signin")}
+                  onPress={handleStartOver}
+                  disabled={deletingAccount}
+                  style={styles.startOverButton}
                 >
-                  <Text style={[styles.backText, { color: T.subtitleColor }]}>
-                    Back to Sign In
-                  </Text>
+                  {deletingAccount ? (
+                    <ActivityIndicator color="#ff6b6b" size="small" />
+                  ) : (
+                    <Text style={styles.startOverText}>
+                      Wrong email or still having issues?{" "}
+                      <Text style={styles.startOverLink}>Start Over</Text>
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </Animated.View>
             )}
@@ -433,30 +404,7 @@ const styles = StyleSheet.create({
   bannerSubtitle: { fontSize: 16.5, lineHeight: 18, marginBottom: 30 },
   bannerRight: { width: 150, overflow: "hidden" },
   body: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 36 },
-  message: { fontSize: FontSizes.sm, lineHeight: 20, marginBottom: 20 },
-  detailsContainer: {
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginBottom: 24,
-    overflow: "hidden",
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  detailDivider: { height: 1, marginHorizontal: 16 },
-  detailIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  detailText: { fontSize: FontSizes.sm, fontWeight: "500", flex: 1 },
-  detailCheck: { marginLeft: 8 },
+  message: { fontSize: FontSizes.sm, lineHeight: 22, marginBottom: 24 },
   primaryButton: {
     borderRadius: BorderRadius.lg,
     paddingVertical: 16,
@@ -484,9 +432,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  resendRow: { alignItems: "center", marginTop: 16 },
+  resendRow: { alignItems: "center", marginTop: 20 },
   resendButton: { paddingVertical: 8 },
   resendText: { fontSize: FontSizes.sm, textAlign: "center" },
-  backButton: { marginTop: 12, paddingVertical: 8, alignItems: "center" },
-  backText: { fontSize: FontSizes.sm },
+  startOverRow: { alignItems: "center", marginTop: 12 },
+  startOverButton: { paddingVertical: 8 },
+  startOverText: {
+    fontSize: FontSizes.sm,
+    textAlign: "center",
+    color: "#9ca3af",
+  },
+  startOverLink: {
+    color: "#ff6b6b",
+    fontWeight: "700",
+  },
 });

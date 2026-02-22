@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   sendEmailVerification as firebaseSendEmailVerification,
   signOut as firebaseSignOut,
   User as FirebaseUser,
@@ -8,7 +9,13 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import {
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { auth, db } from "../../Config/firebase";
 
 class AuthService {
@@ -28,18 +35,14 @@ class AuthService {
 
     const user = userCredential.user;
 
-    // Update Firebase Auth profile FIRST
     await updateProfile(user, {
       displayName: username.trim(),
     });
 
-    // 🔑 Force reload so displayName is guaranteed
     await reload(user);
 
-    // Create Firestore document AFTER reload
     await this.createUserDocument(user, username.trim());
 
-    // Send verification email
     await this.sendEmailVerification(user);
 
     return user;
@@ -68,6 +71,24 @@ class AuthService {
    */
   async signOut(): Promise<void> {
     await firebaseSignOut(auth);
+  }
+
+  /**
+   * Delete account — Firestore first, then Firebase Auth
+   * Must delete Firestore before Auth because once Auth account
+   * is deleted we lose permission to write to Firestore
+   */
+  async deleteAccount(): Promise<void> {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No user is currently signed in");
+    }
+
+    // Step 1 — delete Firestore document first
+    await deleteDoc(doc(db, "users", user.uid));
+
+    // Step 2 — delete Firebase Auth account
+    await deleteUser(user);
   }
 
   /**
@@ -142,7 +163,7 @@ class AuthService {
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email,
-      username: username.trim(), // ✅ FIXED (NO FALLBACK)
+      username: username.trim(),
       photoURL: user.photoURL || null,
       emailVerified: user.emailVerified,
       createdAt: serverTimestamp(),
@@ -151,7 +172,7 @@ class AuthService {
   }
 
   /**
-   * Sync email verification with Firestore
+   * Sync email verification status with Firestore
    */
   private async syncEmailVerificationStatus(user: FirebaseUser): Promise<void> {
     await reload(user);

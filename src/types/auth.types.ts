@@ -1,4 +1,4 @@
-// src/types/auth.types.ts - UPDATED (ALIGNED WITH USERNAME FLOW)
+// src/types/auth.types.ts
 
 import { User as FirebaseUser } from "firebase/auth";
 
@@ -43,11 +43,10 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   userData: UserData | null;
 
-  // ✅ Updated to include username
   signUp: (email: string, password: string, username: string) => Promise<void>;
-
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   sendEmailVerification: () => Promise<void>;
   checkEmailVerified: () => Promise<boolean>;
   resetPassword: (email: string) => Promise<void>;
