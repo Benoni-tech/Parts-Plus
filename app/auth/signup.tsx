@@ -381,9 +381,9 @@ const styles = StyleSheet.create({
   kavWrapper: { flex: 1 },
   outerScroll: {
     flexGrow: 1,
-    justifyContent: "center",
+
     alignItems: "center",
-    paddingVertical: 48,
+    paddingVertical: 40,
   },
   card: {
     width: "98%",

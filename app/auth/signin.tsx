@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   outerScroll: {
     flexGrow: 1,
-    justifyContent: "center",
+
     alignItems: "center",
     paddingVertical: 48,
   },

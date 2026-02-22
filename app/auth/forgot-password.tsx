@@ -16,7 +16,7 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 import {
   AuthTheme,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   },
   outerScroll: {
     flexGrow: 1,
-    justifyContent: "center",
+
     alignItems: "center",
     paddingVertical: 48,
   },
@@ -466,8 +466,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   bannerTitle: {
-    fontSize: FontSizes.xxl,
-    fontWeight: "900",
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
     letterSpacing: 0.2,
     marginBottom: 5,
     marginTop: -15,

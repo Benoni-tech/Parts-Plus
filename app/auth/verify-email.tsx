@@ -15,11 +15,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeIn, FadeInUp, ZoomIn } from "react-native-reanimated";
-import {
-  AuthTheme,
-  BorderRadius,
-  FontSizes
-} from "../../src/constants/colors";
+import { AuthTheme, BorderRadius, FontSizes } from "../../src/constants/colors";
 import { useAuth } from "../../src/hooks/useAuth";
 
 // ─── Grid overlay ─────────────────────────────────────────────────────────────
@@ -354,7 +350,7 @@ const styles = StyleSheet.create({
   mainBackground: { flex: 1 },
   outerScroll: {
     flexGrow: 1,
-    justifyContent: "center",
+
     alignItems: "center",
     paddingVertical: 48,
   },
@@ -395,11 +391,11 @@ const styles = StyleSheet.create({
   },
   bannerTextBlock: {},
   bannerTitle: {
-    fontSize: FontSizes.xxl,
+    fontSize: FontSizes.xl,
     fontWeight: "900",
     letterSpacing: 0.2,
-    marginBottom: 5,
-    marginTop: -15,
+    marginBottom: 15,
+    marginTop: 15,
   },
   bannerSubtitle: { fontSize: 16.5, lineHeight: 18, marginBottom: 30 },
   bannerRight: { width: 150, overflow: "hidden" },
