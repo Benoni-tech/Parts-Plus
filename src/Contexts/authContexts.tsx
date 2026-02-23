@@ -31,9 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const fetchUserData = async (uid: string): Promise<UserData | null> => {
     try {
       const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        return userDoc.data() as UserData;
-      }
+      if (userDoc.exists()) return userDoc.data() as UserData;
       return null;
     } catch (error) {
       if (__DEV__) console.error("Error fetching user data:", error);
@@ -48,7 +46,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (firebaseUser) {
           const data = await fetchUserData(firebaseUser.uid);
           setUserData(data);
-
           setState({
             user: mapFirebaseUser(firebaseUser),
             loading: false,
@@ -74,13 +71,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       },
     );
-
     return () => unsubscribe();
   }, []);
 
-  /**
-   * Sign up
-   */
   const signUp = async (
     email: string,
     password: string,
@@ -88,73 +81,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
-
       await authService.createUser(email, password, username);
-
       const currentUser = auth.currentUser;
       if (currentUser) {
         const data = await fetchUserData(currentUser.uid);
         setUserData(data);
       }
     } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
       throw error;
     }
   };
 
-  /**
-   * Sign in
-   */
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       await authService.signIn(email, password);
     } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
       throw error;
     }
   };
 
-  /**
-   * Sign out
-   */
   const signOut = async (): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       await authService.signOut();
     } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
+      throw error;
+    }
+  };
+
+  const deleteAccount = async (): Promise<void> => {
+    try {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      await authService.deleteAccount();
+    } catch (error: any) {
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
       throw error;
     }
   };
 
   /**
-   * Delete account — clears Firestore then Firebase Auth
-   * onAuthStateChanged fires after, resetting all state automatically
+   * Change password — verifies old password then sets new one
    */
-  const deleteAccount = async (): Promise<void> => {
+  const changePassword = async (
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
-      await authService.deleteAccount();
-      // onAuthStateChanged will fire and reset user + userData to null
+      await authService.changePassword(oldPassword, newPassword);
+      setState((prev) => ({ ...prev, loading: false }));
     } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
       throw error;
     }
   };
@@ -183,6 +164,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUserProfile = async (
+    displayName?: string,
+    photoURL?: string,
+  ): Promise<void> => {
+    try {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      await authService.updateUserProfile(displayName, photoURL);
+      if (auth.currentUser) {
+        const data = await fetchUserData(auth.currentUser.uid);
+        setUserData(data);
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          user: mapFirebaseUser(auth.currentUser!),
+        }));
+      }
+    } catch (error: any) {
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     ...state,
     userData,
@@ -190,6 +193,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signOut,
     deleteAccount,
+    changePassword,
+    updateUserProfile,
     sendEmailVerification,
     checkEmailVerified,
     resetPassword,

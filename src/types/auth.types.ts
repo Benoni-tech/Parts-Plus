@@ -2,9 +2,6 @@
 
 import { User as FirebaseUser } from "firebase/auth";
 
-/**
- * Auth user mapped from Firebase Auth
- */
 export interface User {
   uid: string;
   email: string | null;
@@ -14,9 +11,6 @@ export interface User {
   createdAt: string;
 }
 
-/**
- * Firestore user document structure
- */
 export interface UserData {
   uid: string;
   username: string;
@@ -27,9 +21,6 @@ export interface UserData {
   updatedAt?: any;
 }
 
-/**
- * Auth state stored in context
- */
 export interface AuthState {
   user: User | null;
   loading: boolean;
@@ -37,9 +28,6 @@ export interface AuthState {
   initialized: boolean;
 }
 
-/**
- * Auth context type definition
- */
 export interface AuthContextType extends AuthState {
   userData: UserData | null;
 
@@ -47,15 +35,14 @@ export interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  updateUserProfile: (displayName?: string, photoURL?: string) => Promise<void>;
   sendEmailVerification: () => Promise<void>;
   checkEmailVerified: () => Promise<boolean>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-/**
- * Map Firebase user to app User type
- */
 export const mapFirebaseUser = (firebaseUser: FirebaseUser): User => ({
   uid: firebaseUser.uid,
   email: firebaseUser.email,

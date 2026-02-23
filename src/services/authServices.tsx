@@ -1,12 +1,15 @@
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  EmailAuthProvider,
   sendEmailVerification as firebaseSendEmailVerification,
   signOut as firebaseSignOut,
   User as FirebaseUser,
+  reauthenticateWithCredential,
   reload,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  updatePassword,
   updateProfile,
 } from "firebase/auth";
 import {
@@ -32,24 +35,18 @@ class AuthService {
       email,
       password,
     );
-
     const user = userCredential.user;
 
-    await updateProfile(user, {
-      displayName: username.trim(),
-    });
-
+    await updateProfile(user, { displayName: username.trim() });
     await reload(user);
-
     await this.createUserDocument(user, username.trim());
-
     await this.sendEmailVerification(user);
 
     return user;
   }
 
   /**
-   * Sign in user
+   * Sign in
    */
   async signIn(email: string, password: string): Promise<FirebaseUser> {
     const userCredential = await signInWithEmailAndPassword(
@@ -57,12 +54,9 @@ class AuthService {
       email,
       password,
     );
-
     const user = userCredential.user;
-
     await user.getIdToken(true);
     await this.syncEmailVerificationStatus(user);
-
     return user;
   }
 
@@ -75,20 +69,31 @@ class AuthService {
 
   /**
    * Delete account — Firestore first, then Firebase Auth
-   * Must delete Firestore before Auth because once Auth account
-   * is deleted we lose permission to write to Firestore
    */
   async deleteAccount(): Promise<void> {
     const user = auth.currentUser;
-    if (!user) {
-      throw new Error("No user is currently signed in");
-    }
-
-    // Step 1 — delete Firestore document first
+    if (!user) throw new Error("No user is currently signed in");
     await deleteDoc(doc(db, "users", user.uid));
-
-    // Step 2 — delete Firebase Auth account
     await deleteUser(user);
+  }
+
+  /**
+   * Change password — re-authenticates with old password first,
+   * then updates to new password
+   */
+  async changePassword(
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = auth.currentUser;
+    if (!user || !user.email) throw new Error("No user is currently signed in");
+
+    // Step 1 — verify old password via re-authentication
+    const credential = EmailAuthProvider.credential(user.email, oldPassword);
+    await reauthenticateWithCredential(user, credential);
+
+    // Step 2 — set new password
+    await updatePassword(user, newPassword);
   }
 
   /**
@@ -96,10 +101,7 @@ class AuthService {
    */
   async sendEmailVerification(user?: FirebaseUser): Promise<void> {
     const currentUser = user || auth.currentUser;
-    if (!currentUser) {
-      throw new Error("No user is currently signed in");
-    }
-
+    if (!currentUser) throw new Error("No user is currently signed in");
     await firebaseSendEmailVerification(currentUser);
   }
 
@@ -108,13 +110,9 @@ class AuthService {
    */
   async checkEmailVerified(): Promise<boolean> {
     const user = auth.currentUser;
-    if (!user) {
-      throw new Error("No user is currently signed in");
-    }
-
+    if (!user) throw new Error("No user is currently signed in");
     await reload(user);
     await this.syncEmailVerificationStatus(user);
-
     return user.emailVerified;
   }
 
@@ -133,9 +131,7 @@ class AuthService {
     photoURL?: string,
   ): Promise<void> {
     const user = auth.currentUser;
-    if (!user) {
-      throw new Error("No user is currently signed in");
-    }
+    if (!user) throw new Error("No user is currently signed in");
 
     await updateProfile(user, {
       ...(displayName && { displayName }),
@@ -158,9 +154,7 @@ class AuthService {
     user: FirebaseUser,
     username: string,
   ): Promise<void> {
-    const userRef = doc(db, "users", user.uid);
-
-    await setDoc(userRef, {
+    await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
       email: user.email,
       username: username.trim(),
@@ -176,13 +170,9 @@ class AuthService {
    */
   private async syncEmailVerificationStatus(user: FirebaseUser): Promise<void> {
     await reload(user);
-
     await setDoc(
       doc(db, "users", user.uid),
-      {
-        emailVerified: user.emailVerified,
-        updatedAt: serverTimestamp(),
-      },
+      { emailVerified: user.emailVerified, updatedAt: serverTimestamp() },
       { merge: true },
     );
   }

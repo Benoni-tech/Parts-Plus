@@ -10,13 +10,13 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { AuthTheme } from "../../constants/colors";
+import { AuthTheme, Spacing } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
 import AccountSection from "./AccountSection";
-import AppPreferencesSection from "./AppPreferencesSection";
 import ProfileBanner from "./ProfileBanner";
 import SignOutButton from "./SignOutButton";
 import SupportSection from "./SupportSection";
+import UpgradeSection from "./UpgradeSection";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
       <StatusBar style={T.statusBar} />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/*Banner*/}
+        {/* Banner */}
         <ProfileBanner
           user={user}
           isDark={isDark}
@@ -58,8 +58,13 @@ export default function ProfileScreen() {
 
         {/* ── Sections ───────────────────────────────────────────────────── */}
         <View style={styles.sectionsContainer}>
+          {/* Upgrade — sits above Account */}
+          <UpgradeSection isDark={isDark} T={T} currentPlan="free" />
+
+          <View style={styles.sectionGap} />
+
           <AccountSection user={user} isDark={isDark} T={T} router={router} />
-          <AppPreferencesSection isDark={isDark} T={T} />
+
           <SupportSection isDark={isDark} T={T} />
           <SignOutButton isDark={isDark} T={T} onSignOut={handleSignOut} />
           <View style={{ height: 48 }} />
@@ -75,7 +80,9 @@ const styles = StyleSheet.create({
   },
   sectionsContainer: {
     paddingHorizontal: 16,
-    /* paddingVertical: 24, */
     marginBottom: 93,
+  },
+  sectionGap: {
+    height: Spacing.md,
   },
 });

@@ -245,7 +245,7 @@ export const AuthTheme = {
     rememberText: "#999999",
 
     // Buttons
-    btnBg: "#ffa303",
+    btnBg: "#182F48",
     btnText: "#ffffff",
     btnArrowBg: "#ffa303",
     btnArrow: "#182F48",
