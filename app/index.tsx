@@ -1,31 +1,58 @@
+// app/index.tsx
+
 import React, { useRef } from "react";
-import { Animated, Image, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
+import { AuthTheme, Colors } from "../src/constants/colors";
 
 export default function Index() {
   const progress = useRef(new Animated.Value(0)).current;
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const T = isDark ? AuthTheme.dark : AuthTheme.light;
 
-  // Animate progress bar only (no navigation here)
   React.useEffect(() => {
     Animated.timing(progress, {
       toValue: 120,
-      duration: 5000,
+      duration: 3000,
       useNativeDriver: false,
     }).start();
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: T.background }]}>
       <View style={styles.logoContainer}>
         <Image
           source={require("@/assets/images/logo.png")}
-          style={{ width: 100, height: 100, tintColor: "white" }}
+          style={[
+            styles.logo,
+            { tintColor: isDark ? "#ffffff" : Colors.primary },
+          ]}
         />
       </View>
-      <Text style={styles.title}>PARTS PLUS</Text>
-      <Text style={styles.subtitle}>MASTER YOUR PART</Text>
+      <Text style={[styles.title, { color: T.textPrimary }]}>PARTS PLUS</Text>
+      <Text style={[styles.subtitle, { color: T.textSecondary }]}>
+        MASTER YOUR PART
+      </Text>
       <View style={styles.bottomContainer}>
-        <Text style={styles.initializingText}>INITIALIZING STUDIO</Text>
-        <Animated.View style={[styles.progressBar, { width: progress }]} />
+        <Text style={[styles.initializingText, { color: T.textSecondary }]}>
+          INITIALIZING STUDIO
+        </Text>
+        <Animated.View
+          style={[
+            styles.progressBar,
+            {
+              width: progress,
+              backgroundColor: Colors.secondary,
+            },
+          ]}
+        />
       </View>
     </View>
   );
@@ -34,21 +61,22 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black",
     alignItems: "center",
     justifyContent: "center",
   },
   logoContainer: {
     marginBottom: 20,
   },
+  logo: {
+    width: 100,
+    height: 100,
+  },
   title: {
-    color: "#FFFFFF",
     fontSize: 36,
     fontWeight: "bold",
     letterSpacing: 4,
   },
   subtitle: {
-    color: "#AAA",
     fontSize: 14,
     letterSpacing: 2,
     marginTop: 8,
@@ -59,14 +87,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   initializingText: {
-    color: "#888",
     fontSize: 12,
     letterSpacing: 1,
     marginBottom: 15,
   },
   progressBar: {
     height: 3,
-    backgroundColor: "#FFD700",
     borderRadius: 2,
   },
 });

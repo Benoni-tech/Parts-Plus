@@ -1,50 +1,35 @@
-// src/constants/colors.ts - Complete Updated Version
+// src/constants/colors.ts
 
 export const Colors = {
-  primary: "#FFD700", // Gold
-  secondary: "#000000", // Black
-  background: "#0A0A0A", // Rich Dark Background
-  card: "#1A1A1A", // Card Background
+  // ─── Brand Primitives ────────────────────────────────────────────────────────
+  primary: "#182F48", // navy — main backgrounds, banners, cards in light mode
+  secondary: "#ffa303", // orange — buttons, active states, accents, links
 
-  text: {
-    primary: "#FFFFFF",
-    secondary: "#999999",
-    light: "#666666",
-    white: "#FFFFFF",
-  },
+  // ─── Semantic ────────────────────────────────────────────────────────────────
+  error: "#FF3B30",
+  success: "#34C759",
+  warning: "#FF9500",
 
-  // Gradient Colors - Using as const for TypeScript
+  // ─── Gradients (static — never mode-aware) ───────────────────────────────────
   gradients: {
-    primary: ["#FFD700", "#FFA500"] as const,
+    primary: ["#182F48", "#0f1f30"] as const,
     hero: ["#1A1A2E", "#16213E", "#0F3460"] as const,
     purple: ["#A78BFA", "#7C3AED"] as const,
     red: ["#FF6B6B", "#FF5252"] as const,
     teal: ["#4ECDC4", "#38B2AC"] as const,
     yellow: ["#FFD93D", "#F9CA24"] as const,
+    orange: ["#ffa303", "#e08c00"] as const,
   },
 
-  // Accent Colors
+  // ─── Accents (static) ────────────────────────────────────────────────────────
   accents: {
     red: "#FF6B6B",
     teal: "#4ECDC4",
     yellow: "#FFD93D",
     purple: "#A78BFA",
-    orange: "#FFA500",
+    orange: "#ffa303",
+    navy: "#182F48",
   },
-
-  error: "#FF3B30",
-  success: "#34C759",
-  warning: "#FF9500",
-
-  overlay: "rgba(0, 0, 0, 0.3)",
-  overlayDark: "rgba(0, 0, 0, 0.6)",
-  overlayLight: "rgba(255, 255, 255, 0.05)",
-
-  border: "rgba(255, 255, 255, 0.1)",
-  borderLight: "rgba(255, 255, 255, 0.05)",
-
-  inputBackground: "rgba(255, 255, 255, 0.1)",
-  glass: "rgba(255, 255, 255, 0.1)",
 };
 
 export const Spacing = {
@@ -54,6 +39,7 @@ export const Spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  xxxl: 84,
 };
 
 export const BorderRadius = {
@@ -74,7 +60,7 @@ export const FontSizes = {
   xxxl: 40,
 };
 
-// Shadow Presets
+// ─── Shadow Presets ───────────────────────────────────────────────────────────
 export const Shadows = {
   small: {
     shadowColor: "#000",
@@ -98,7 +84,7 @@ export const Shadows = {
     elevation: 8,
   },
   glow: {
-    shadowColor: "#FFD700",
+    shadowColor: "#ffa303",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -106,7 +92,7 @@ export const Shadows = {
   },
 };
 
-// Animation Durations
+// ─── Animation Durations ──────────────────────────────────────────────────────
 export const AnimationDurations = {
   fast: 150,
   normal: 300,
@@ -114,7 +100,7 @@ export const AnimationDurations = {
   verySlow: 800,
 };
 
-// Z-index layers
+// ─── Z-index Layers ───────────────────────────────────────────────────────────
 export const ZIndex = {
   background: -1,
   base: 0,
@@ -125,8 +111,6 @@ export const ZIndex = {
 };
 
 // ─── Auth Theme Type ──────────────────────────────────────────────────────────
-// Use this type for any component prop that accepts a theme token object.
-// Avoids TypeScript union narrowing errors caused by statusBar literal types.
 export type AuthThemeType = {
   mainBg: string;
   cardBg: string;
@@ -154,24 +138,31 @@ export type AuthThemeType = {
   btnArrow: string;
   signInText: string;
   signInLink: string;
+  // ─── App-wide tokens ──────────────────────────────────────────────────────
+  background: string;
+  card: string;
+  textPrimary: string;
+  textSecondary: string;
+  border: string;
+  overlay: string;
+  overlayDark: string;
   statusBar: "light" | "dark";
   shadow: string;
 };
 
-// ─── Auth Screen Theme Tokens ─────────────────────────────────────────────────
-// Used by signup, signin, and any other auth screens.
-// Import: import { AuthTheme } from "../../src/constants/colors";
-// Usage:  const T = useColorScheme() === "dark" ? AuthTheme.dark : AuthTheme.light;
+// ─── App-wide Theme Tokens ────────────────────────────────────────────────────
+// Single source of truth for all mode-aware colours across the entire app.
+// Usage: const T = useColorScheme() === "dark" ? AuthTheme.dark : AuthTheme.light;
 
 export const AuthTheme = {
   dark: {
     // Backgrounds
-    mainBg: "#0a0a0a", // near-black outer shell
-    cardBg: "#161616", // slightly lifted card — not pure black
-    cardBorder: "rgba(255, 255, 255, 0.10)",
+    mainBg: "#0a0a0a",
+    cardBg: "#161616",
+    cardBorder: "rgba(255,255,255,0.10)",
 
-    // Banner (top accent block inside card)
-    bannerBg: "#222222", // lighter-black for contrast against card
+    // Banner
+    bannerBg: "#222222",
     backRectBg: "rgba(255,255,255,0.12)",
     backRectBorder: "rgba(255,255,255,0.22)",
     backArrow: "#ffffff",
@@ -179,7 +170,7 @@ export const AuthTheme = {
     subtitleColor: "rgba(255,255,255,0.60)",
 
     // Grid lines
-    gridLine: "rgb(255, 255, 255)",
+    gridLine: "rgb(255,255,255)",
     gridLineTint: "#e8e0d0",
 
     // Form labels
@@ -197,15 +188,24 @@ export const AuthTheme = {
     checkboxBorder: "rgba(255,255,255,0.30)",
     rememberText: "rgba(255,255,255,0.45)",
 
-    // Button — orange accent replaces white, arrow flips to contrast
-    btnBg: "#ffa303", // orange pill background
-    btnText: "#0a0a0a", // black text on orange
-    btnArrowBg: "#ffa303", // orange arrow circle
-    btnArrow: "#0a0a0a", // black arrow icon on orange
+    // Buttons
+    btnBg: "#ffa303",
+    btnText: "#0a0a0a",
+    btnArrowBg: "#ffa303",
+    btnArrow: "#0a0a0a",
 
     // Links
     signInText: "rgba(255,255,255,0.45)",
-    signInLink: "#ffa303", // orange accent for action links
+    signInLink: "#ffa303",
+
+    // ─── App-wide ───────────────────────────────────────────────────────────
+    background: "#0a0a0a",
+    card: "#161616",
+    textPrimary: "#ffffff",
+    textSecondary: "rgba(255,255,255,0.55)",
+    border: "rgba(255,255,255,0.10)",
+    overlay: "rgba(0,0,0,0.55)",
+    overlayDark: "rgba(0,0,0,0.80)",
 
     statusBar: "light" as const,
     shadow: "#000000",
@@ -244,15 +244,24 @@ export const AuthTheme = {
     checkboxBorder: "#cccccc",
     rememberText: "#999999",
 
-    // Button
-    btnBg: "#182F48",
+    // Buttons
+    btnBg: "#ffa303",
     btnText: "#ffffff",
     btnArrowBg: "#ffa303",
     btnArrow: "#182F48",
 
     // Links
     signInText: "#999999",
-    signInLink: "#111111",
+    signInLink: "#182F48",
+
+    // ─── App-wide ───────────────────────────────────────────────────────────
+    background: "#f5f5f5",
+    card: "#ffffff",
+    textPrimary: "#111111",
+    textSecondary: "#666666",
+    border: "rgba(0,0,0,0.07)",
+    overlay: "rgba(0,0,0,0.30)",
+    overlayDark: "rgba(0,0,0,0.60)",
 
     statusBar: "dark" as const,
     shadow: "#00000018",
