@@ -20,6 +20,10 @@ import {
 } from "../../constants/colors";
 import { usePlayer } from "../../Contexts/PlayerContext";
 
+// TAB_BAR_HEIGHT + safe area — mini player sits just above the tab bar
+const TAB_BAR_HEIGHT = 60;
+const BOTTOM_OFFSET = TAB_BAR_HEIGHT + 8;
+
 export default function MiniPlayer() {
   const {
     hymn,
@@ -39,12 +43,11 @@ export default function MiniPlayer() {
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
 
-  const slideAnim = useRef(new Animated.Value(80)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
 
-  // Slide up when a hymn is loaded, slide down when nothing playing
   useEffect(() => {
     Animated.spring(slideAnim, {
-      toValue: hymn ? 0 : 80,
+      toValue: hymn ? 0 : 100,
       tension: 60,
       friction: 12,
       useNativeDriver: true,
@@ -57,19 +60,23 @@ export default function MiniPlayer() {
   const canPrev = availableParts.indexOf(voicePart) > 0;
   const canNext = availableParts.indexOf(voicePart) < availableParts.length - 1;
 
+  const capitalise = (s: string) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
   return (
     <Animated.View
       style={[
         styles.container,
         {
           backgroundColor: T.cardBg,
-          borderTopColor: T.border,
-          shadowColor: isDark ? "#000" : "#00000022",
+          borderColor: T.border,
+          shadowColor: isDark ? "#000" : "#00000020",
+          bottom: BOTTOM_OFFSET,
           transform: [{ translateY: slideAnim }],
         },
       ]}
     >
-      {/* ── Progress strip at the very top ────────────────────────────── */}
+      {/* Progress strip */}
       <View style={[styles.progressTrack, { backgroundColor: T.border }]}>
         <View
           style={[
@@ -82,13 +89,12 @@ export default function MiniPlayer() {
         />
       </View>
 
-      {/* ── Content row ───────────────────────────────────────────────── */}
+      {/* Content */}
       <TouchableOpacity
         style={styles.contentRow}
         onPress={openFullPlayer}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
       >
-        {/* Thumbnail */}
         <Image
           source={{
             uri:
@@ -98,37 +104,31 @@ export default function MiniPlayer() {
           style={styles.thumb}
         />
 
-        {/* Info */}
         <View style={styles.info}>
           <Text
             style={[styles.title, { color: T.textPrimary }]}
             numberOfLines={1}
           >
-            {hymn.title}
+            {capitalise(hymn.title)}
           </Text>
           <Text
             style={[styles.part, { color: T.textSecondary }]}
             numberOfLines={1}
           >
-            {voicePart.charAt(0).toUpperCase() + voicePart.slice(1)}
+            {capitalise(voicePart)}
           </Text>
         </View>
 
-        {/* Controls — stop propagation so tapping them doesn't open player */}
         <View style={styles.controls}>
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
               prevPart();
             }}
-            style={[styles.ctrlBtn, !canPrev && styles.ctrlBtnDisabled]}
+            style={[styles.ctrlBtn, !canPrev && { opacity: 0.3 }]}
             disabled={!canPrev}
           >
-            <Ionicons
-              name="play-skip-back"
-              size={18}
-              color={canPrev ? T.textPrimary : T.textSecondary}
-            />
+            <Ionicons name="play-skip-back" size={18} color={T.textPrimary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -140,8 +140,8 @@ export default function MiniPlayer() {
           >
             <Ionicons
               name={isPlaying ? "pause" : "play"}
-              size={18}
-              color="#ffffff"
+              size={17}
+              color="#fff"
             />
           </TouchableOpacity>
 
@@ -150,13 +150,13 @@ export default function MiniPlayer() {
               e.stopPropagation();
               nextPart();
             }}
-            style={[styles.ctrlBtn, !canNext && styles.ctrlBtnDisabled]}
+            style={[styles.ctrlBtn, !canNext && { opacity: 0.3 }]}
             disabled={!canNext}
           >
             <Ionicons
               name="play-skip-forward"
               size={18}
-              color={canNext ? T.textPrimary : T.textSecondary}
+              color={T.textPrimary}
             />
           </TouchableOpacity>
         </View>
@@ -168,65 +168,40 @@ export default function MiniPlayer() {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 12,
+    left: Spacing.md,
+    right: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
   },
-  progressTrack: {
-    height: 2,
-    width: "100%",
-  },
-  progressFill: {
-    height: "100%",
-  },
+  progressTrack: { height: 2, width: "100%" },
+  progressFill: { height: "100%" },
   contentRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: 10,
-    paddingBottom: 22, // extra for bottom safe area
-    gap: 12,
+    gap: 10,
   },
-  thumb: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.sm,
-  },
-  info: {
-    flex: 1,
-  },
-  title: {
-    fontSize: FontSizes.sm,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  part: {
-    fontSize: FontSizes.xs,
-    fontWeight: "500",
-  },
-  controls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  thumb: { width: 40, height: 40, borderRadius: BorderRadius.sm },
+  info: { flex: 1 },
+  title: { fontSize: FontSizes.sm, fontWeight: "700", marginBottom: 2 },
+  part: { fontSize: FontSizes.xs, fontWeight: "500" },
+  controls: { flexDirection: "row", alignItems: "center", gap: 6 },
   ctrlBtn: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     justifyContent: "center",
     alignItems: "center",
   },
-  ctrlBtnDisabled: {
-    opacity: 0.35,
-  },
   playBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },

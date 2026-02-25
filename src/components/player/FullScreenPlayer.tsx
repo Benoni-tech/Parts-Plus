@@ -17,20 +17,17 @@ import {
 import { AuthTheme, Colors, FontSizes, Spacing } from "../../constants/colors";
 import { usePlayer } from "../../Contexts/PlayerContext";
 
-// ─── Lyrics parser ────────────────────────────────────────────────────────────
 function parseLyrics(
   raw: string,
 ): { section: string | null; lines: string[] }[] {
   const result: { section: string | null; lines: string[] }[] = [];
   let currentSection: string | null = null;
   let currentLines: string[] = [];
-
   raw.split("\n").forEach((line) => {
     const match = line.match(/^\[(.+)\]$/);
     if (match) {
-      if (currentLines.length > 0 || currentSection !== null) {
+      if (currentLines.length > 0 || currentSection !== null)
         result.push({ section: currentSection, lines: currentLines });
-      }
       currentSection = match[1];
       currentLines = [];
     } else if (line.trim() !== "") {
@@ -39,12 +36,13 @@ function parseLyrics(
       currentLines.push("");
     }
   });
-
-  if (currentLines.length > 0 || currentSection !== null) {
+  if (currentLines.length > 0 || currentSection !== null)
     result.push({ section: currentSection, lines: currentLines });
-  }
   return result;
 }
+
+const capitalise = (s: string) =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 export default function FullScreenPlayer() {
   const {
@@ -60,8 +58,6 @@ export default function FullScreenPlayer() {
     isFullPlayerOpen,
     togglePlayPause,
     seekTo,
-    skipForward,
-    skipBackward,
     nextPart,
     prevPart,
     toggleShuffle,
@@ -72,7 +68,6 @@ export default function FullScreenPlayer() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
-
   const [activeView, setActiveView] = useState<"player" | "lyrics">("player");
 
   if (!hymn || !voicePart) return null;
@@ -87,14 +82,11 @@ export default function FullScreenPlayer() {
     return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   };
 
-  // ── Top bar ─────────────────────────────────────────────────────────────────
   const TopBar = () => (
     <View style={[styles.topBar, { borderBottomColor: T.border }]}>
       <TouchableOpacity onPress={closeFullPlayer} style={styles.navBtn}>
         <Ionicons name="chevron-down" size={26} color={T.textPrimary} />
       </TouchableOpacity>
-
-      {/* Player / Lyrics pill toggle */}
       <View
         style={[
           styles.togglePill,
@@ -134,14 +126,12 @@ export default function FullScreenPlayer() {
           </Text>
         </TouchableOpacity>
       </View>
-
       <TouchableOpacity style={styles.navBtn}>
         <Ionicons name="heart-outline" size={22} color={T.textPrimary} />
       </TouchableOpacity>
     </View>
   );
 
-  // ── Mini bar (inside lyrics view) ──────────────────────────────────────────
   const MiniBar = () => (
     <View
       style={[
@@ -158,7 +148,7 @@ export default function FullScreenPlayer() {
           style={[styles.miniTitle, { color: T.textPrimary }]}
           numberOfLines={1}
         >
-          {hymn.title}
+          {capitalise(hymn.title)}
         </Text>
         <View style={[styles.miniTrack, { backgroundColor: T.border }]}>
           <View
@@ -196,7 +186,7 @@ export default function FullScreenPlayer() {
       <View style={[styles.root, { backgroundColor: T.background }]}>
         <TopBar />
 
-        {/* ── PLAYER VIEW ────────────────────────────────────────────── */}
+        {/* ── PLAYER VIEW ──────────────────────────────────────────────── */}
         {activeView === "player" && (
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -213,20 +203,20 @@ export default function FullScreenPlayer() {
               />
             </View>
 
-            {/* Song info */}
+            {/* Info */}
             <View style={styles.infoRow}>
               <View style={{ flex: 1 }}>
                 <Text
                   style={[styles.songTitle, { color: T.textPrimary }]}
                   numberOfLines={2}
                 >
-                  {hymn.title}
+                  {capitalise(hymn.title)}
                 </Text>
                 <Text
                   style={[styles.composerText, { color: T.textSecondary }]}
                   numberOfLines={1}
                 >
-                  {hymn.composer}
+                  {capitalise(hymn.composer)}
                 </Text>
               </View>
               <View
@@ -265,7 +255,7 @@ export default function FullScreenPlayer() {
               </View>
             </View>
 
-            {/* ── Controls: Shuffle | PrevPart | Back10 | Play | Fwd10 | NextPart | Repeat ── */}
+            {/* Controls: Shuffle | PrevPart | Play | NextPart | Repeat */}
             <View style={styles.controls}>
               {/* Shuffle */}
               <TouchableOpacity style={styles.sideBtn} onPress={toggleShuffle}>
@@ -274,9 +264,17 @@ export default function FullScreenPlayer() {
                   size={22}
                   color={shuffleOn ? Colors.secondary : T.textSecondary}
                 />
+                {shuffleOn && (
+                  <View
+                    style={[
+                      styles.activeDot,
+                      { backgroundColor: Colors.secondary },
+                    ]}
+                  />
+                )}
               </TouchableOpacity>
 
-              {/* Prev voice part */}
+              {/* Prev part */}
               <TouchableOpacity
                 style={[styles.skipBtn, !canPrev && styles.disabled]}
                 onPress={prevPart}
@@ -284,20 +282,12 @@ export default function FullScreenPlayer() {
               >
                 <Ionicons
                   name="play-skip-back"
-                  size={24}
+                  size={26}
                   color={canPrev ? T.textPrimary : T.textSecondary}
                 />
               </TouchableOpacity>
 
-              {/* Back 10s */}
-              <TouchableOpacity style={styles.seekBtn} onPress={skipBackward}>
-                <Ionicons name="play-back" size={22} color={T.textPrimary} />
-                <Text style={[styles.seekLabel, { color: T.textPrimary }]}>
-                  10
-                </Text>
-              </TouchableOpacity>
-
-              {/* Play / Pause */}
+              {/* Play */}
               <TouchableOpacity
                 style={[styles.playBtn, { backgroundColor: Colors.primary }]}
                 onPress={togglePlayPause}
@@ -314,15 +304,7 @@ export default function FullScreenPlayer() {
                 )}
               </TouchableOpacity>
 
-              {/* Fwd 10s */}
-              <TouchableOpacity style={styles.seekBtn} onPress={skipForward}>
-                <Ionicons name="play-forward" size={22} color={T.textPrimary} />
-                <Text style={[styles.seekLabel, { color: T.textPrimary }]}>
-                  10
-                </Text>
-              </TouchableOpacity>
-
-              {/* Next voice part */}
+              {/* Next part */}
               <TouchableOpacity
                 style={[styles.skipBtn, !canNext && styles.disabled]}
                 onPress={nextPart}
@@ -330,7 +312,7 @@ export default function FullScreenPlayer() {
               >
                 <Ionicons
                   name="play-skip-forward"
-                  size={24}
+                  size={26}
                   color={canNext ? T.textPrimary : T.textSecondary}
                 />
               </TouchableOpacity>
@@ -338,14 +320,22 @@ export default function FullScreenPlayer() {
               {/* Repeat */}
               <TouchableOpacity style={styles.sideBtn} onPress={toggleRepeat}>
                 <Ionicons
-                  name="repeat"
+                  name={repeatOn ? "repeat" : "repeat-outline"}
                   size={22}
                   color={repeatOn ? Colors.secondary : T.textSecondary}
                 />
+                {repeatOn && (
+                  <View
+                    style={[
+                      styles.activeDot,
+                      { backgroundColor: Colors.secondary },
+                    ]}
+                  />
+                )}
               </TouchableOpacity>
             </View>
 
-            {/* Part indicators */}
+            {/* Part dots */}
             {availableParts.length > 1 && (
               <View style={styles.partDots}>
                 {availableParts.map((p) => (
@@ -386,7 +376,7 @@ export default function FullScreenPlayer() {
                     <Text
                       style={[styles.creditRole, { color: T.textSecondary }]}
                     >
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                      {capitalise(role)}
                     </Text>
                     <Text style={[styles.creditName, { color: T.textPrimary }]}>
                       {name as string}
@@ -400,7 +390,7 @@ export default function FullScreenPlayer() {
           </ScrollView>
         )}
 
-        {/* ── LYRICS VIEW ────────────────────────────────────────────── */}
+        {/* ── LYRICS VIEW ──────────────────────────────────────────────── */}
         {activeView === "lyrics" && (
           <>
             <ScrollView
@@ -436,7 +426,7 @@ export default function FullScreenPlayer() {
                 ))
               ) : (
                 <Text style={[styles.noLyrics, { color: T.textSecondary }]}>
-                  No lyrics available for this hymn.
+                  No lyrics available.
                 </Text>
               )}
               <View style={{ height: 130 }} />
@@ -451,8 +441,6 @@ export default function FullScreenPlayer() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
-  // ── Top bar ────────────────────────────────────────────────────────────────
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -471,8 +459,6 @@ const styles = StyleSheet.create({
   togglePill: { flexDirection: "row", borderRadius: 20, padding: 3 },
   toggleOption: { paddingHorizontal: 20, paddingVertical: 7, borderRadius: 17 },
   toggleTxt: { fontSize: FontSizes.sm, fontWeight: "600" },
-
-  // ── Player ─────────────────────────────────────────────────────────────────
   playerScroll: { paddingBottom: 20 },
   artWrapper: { alignItems: "center", paddingVertical: Spacing.xl },
   albumArt: { width: 260, height: 260, borderRadius: 24 },
@@ -492,8 +478,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   voiceBadgeText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
-
-  // ── Progress ───────────────────────────────────────────────────────────────
   progressSection: { paddingHorizontal: Spacing.md, marginBottom: 4 },
   slider: { width: "100%", height: 36 },
   timeRow: {
@@ -503,40 +487,25 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   timeText: { fontSize: 12, fontWeight: "500" },
-
-  // ── Controls ───────────────────────────────────────────────────────────────
   controls: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
   },
   sideBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   skipBtn: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     justifyContent: "center",
     alignItems: "center",
-  },
-  seekBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  seekLabel: {
-    position: "absolute",
-    bottom: 2,
-    fontSize: 9,
-    fontWeight: "800",
   },
   playBtn: {
     width: 70,
@@ -551,8 +520,14 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   disabled: { opacity: 0.3 },
-
-  // ── Part dots ──────────────────────────────────────────────────────────────
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    position: "absolute",
+    bottom: 2,
+    alignSelf: "center",
+  },
   partDots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -560,12 +535,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: Spacing.lg,
   },
-  partDot: {
-    height: 6,
-    borderRadius: 3,
-  },
-
-  // ── Credits ────────────────────────────────────────────────────────────────
+  partDot: { height: 6, borderRadius: 3 },
   creditsBox: {
     marginHorizontal: Spacing.lg,
     borderRadius: 14,
@@ -589,8 +559,6 @@ const styles = StyleSheet.create({
   },
   creditRole: { fontSize: FontSizes.sm, fontWeight: "600" },
   creditName: { fontSize: FontSizes.sm, fontWeight: "700" },
-
-  // ── Lyrics ─────────────────────────────────────────────────────────────────
   lyricsContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl },
   lyricsBlock: { marginBottom: Spacing.xl },
   sectionLabel: {
@@ -601,8 +569,6 @@ const styles = StyleSheet.create({
   },
   lyricLine: { fontSize: FontSizes.md, lineHeight: 28 },
   noLyrics: { fontSize: FontSizes.md, textAlign: "center", marginTop: 80 },
-
-  // ── Mini bar ───────────────────────────────────────────────────────────────
   miniBar: {
     position: "absolute",
     bottom: 0,

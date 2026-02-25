@@ -3,7 +3,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-import { StyleSheet, useColorScheme } from "react-native";
+import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { AuthTheme, Colors } from "../../src/constants/colors";
 
 export default function TabsLayout() {
@@ -15,43 +15,67 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.secondary, // orange
-        tabBarInactiveTintColor: T.textSecondary,
+        tabBarShowLabel: false, // we render custom labels ourselves
         tabBarStyle: [
           styles.tabBar,
           {
-            backgroundColor: T.card,
-            borderColor: T.border,
-            shadowColor: T.shadow,
+            backgroundColor: T.cardBg,
+            borderTopColor: T.border,
+            shadowColor: isDark ? "#000" : "#00000018",
           },
         ],
-        tabBarItemStyle: styles.tabItem,
-        tabBarLabelStyle: styles.label,
+        tabBarActiveTintColor: Colors.secondary,
+        tabBarInactiveTintColor: T.textSecondary,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
-              size={22}
+            <TabIcon
+              icon={focused ? "home" : "home-outline"}
+              label="Home"
               color={color}
+              focused={focused}
             />
           ),
         }}
       />
-
+      <Tabs.Screen
+        name="search"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              icon={focused ? "search" : "search-outline"}
+              label="Search"
+              color={color}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="library"
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              icon={focused ? "library" : "library-outline"}
+              label="Library"
+              color={color}
+              focused={focused}
+            />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person" : "person-outline"}
-              size={22}
+            <TabIcon
+              icon={focused ? "person" : "person-outline"}
+              label="Profile"
               color={color}
+              focused={focused}
             />
           ),
         }}
@@ -60,30 +84,49 @@ export default function TabsLayout() {
   );
 }
 
+function TabIcon({
+  icon,
+  label,
+  color,
+  focused,
+}: {
+  icon: any;
+  label: string;
+  color: string;
+  focused: boolean;
+}) {
+  return (
+    <View style={styles.tabItem}>
+      <Ionicons name={icon} size={24} color={color} />
+      <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   tabBar: {
+    height: Platform.OS === "ios" ? 80 : 62,
+    borderTopWidth: 1,
+    paddingTop: 8,
+    // ── No floating pill — full width flush to bottom like Spotify ──
+    borderRadius: 0,
     position: "absolute",
-    bottom: 80,
+    bottom: 0,
     left: 0,
     right: 0,
-    height: 64,
-    marginHorizontal: 50,
-    borderRadius: 32,
-    borderWidth: 1,
-    paddingHorizontal: 2,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-    borderTopWidth: 1,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 12,
   },
   tabItem: {
-    height: 50,
-    borderRadius: 25,
-    marginVertical: 7,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
-  label: {
-    fontSize: 12,
+  tabLabel: {
+    fontSize: 10,
     fontWeight: "600",
+    letterSpacing: 0.2,
   },
 });

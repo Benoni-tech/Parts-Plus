@@ -31,6 +31,9 @@ const VOICE_PARTS: { part: VoicePart; name: string }[] = [
   { part: "bass", name: "Bass" },
 ];
 
+const capitalise = (str: string) =>
+  str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+
 export default function HymnDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -38,9 +41,7 @@ export default function HymnDetailScreen() {
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
 
-  // ✅ usePlayer now works because PlayerProvider is in _layout.tsx
   const { play, voicePart: activePart, hymn: activeHymn } = usePlayer();
-
   const { hymn, loading, error } = useHymn(id as string);
 
   const relatedFilter = hymn?.tags?.length
@@ -79,152 +80,197 @@ export default function HymnDetailScreen() {
     hymn.coverImage ||
     `https://via.placeholder.com/300/${Colors.primary.replace("#", "")}/FFFFFF?text=${hymn.title[0]}`;
 
-  // A part is "active" if this hymn is the one currently loaded in the player
   const isThisHymnActive = activeHymn?.id === hymn.id;
 
   return (
     <View style={[styles.container, { backgroundColor: T.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* ── Top section ─────────────────────────────────────────────────── */}
-      <View style={[styles.topSection, { backgroundColor: T.bannerBg }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <View
-            style={[
-              styles.backRect,
-              { backgroundColor: T.backRectBg, borderColor: T.backRectBorder },
-            ]}
-          >
-            <Ionicons name="arrow-back" size={20} color={T.backArrow} />
-          </View>
+      {/* ── Top bar ──────────────────────────────────────────────────────── */}
+      <View style={[styles.topBar, { borderBottomColor: T.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.navBtn}>
+          <Ionicons name="chevron-down" size={26} color={T.textPrimary} />
         </TouchableOpacity>
-
-        <Text
-          style={[styles.topTitle, { color: T.titleColor }]}
-          numberOfLines={2}
-        >
-          {hymn.title}
-        </Text>
-        {hymn.composer ? (
-          <Text style={[styles.topComposer, { color: T.subtitleColor }]}>
-            {hymn.composer}
+        <View style={styles.topBarCenter}>
+          <Text style={[styles.topBarLabel, { color: T.textSecondary }]}>
+            Now Playing
           </Text>
-        ) : null}
-
-        <Image source={{ uri: coverImage }} style={styles.coverImage} />
+          <Text
+            style={[styles.topBarTitle, { color: T.textPrimary }]}
+            numberOfLines={1}
+          >
+            {capitalise(hymn.title)}
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.navBtn}>
+          <Ionicons name="heart-outline" size={22} color={T.textPrimary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ── Voice parts ─────────────────────────────────────────────── */}
-        <View style={[styles.voiceContainer, { backgroundColor: T.cardBg }]}>
-          {/* Timeline line */}
-          <View style={[styles.timeline, { backgroundColor: T.border }]} />
-
-          {VOICE_PARTS.map((vp) => {
-            const isSelected = isThisHymnActive && activePart === vp.part;
-            const hasAudio = !!hymn.voiceParts?.[vp.part];
-
-            return (
-              <TouchableOpacity
-                key={vp.part}
-                style={styles.voiceRow}
-                onPress={() => {
-                  if (hasAudio) {
-                    // ✅ Calls global play — stops any existing audio first
-                    play(hymn, vp.part);
-                  }
-                }}
-                activeOpacity={hasAudio ? 0.75 : 1}
-              >
-                {/* Timeline dot */}
-                <View
-                  style={[
-                    styles.timelineDot,
-                    {
-                      backgroundColor: isSelected ? Colors.secondary : T.border,
-                      borderColor: isSelected
-                        ? Colors.secondary
-                        : T.inputBorder,
-                    },
-                  ]}
-                />
-
-                {/* Card */}
-                <View
-                  style={[
-                    styles.voiceCard,
-                    {
-                      backgroundColor: isSelected
-                        ? isDark
-                          ? "rgba(255,163,3,0.10)"
-                          : "rgba(255,163,3,0.08)"
-                        : T.inputBg,
-                      borderColor: isSelected ? Colors.secondary : T.cardBorder,
-                    },
-                  ]}
-                >
-                  <Image
-                    source={{ uri: coverImage }}
-                    style={styles.voiceImage}
-                  />
-
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.voiceTitle, { color: T.inputText }]}>
-                      {hymn.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.voiceSubtitle,
-                        { color: isSelected ? Colors.secondary : T.labelColor },
-                      ]}
-                    >
-                      {vp.name}
-                    </Text>
-                  </View>
-
-                  {/* State indicator */}
-                  {isSelected ? (
-                    <View
-                      style={[
-                        styles.playingBadge,
-                        { backgroundColor: Colors.secondary },
-                      ]}
-                    >
-                      <Ionicons name="musical-note" size={12} color="#fff" />
-                    </View>
-                  ) : hasAudio ? (
-                    <View
-                      style={[
-                        styles.playIcon,
-                        { backgroundColor: T.inputBorder },
-                      ]}
-                    >
-                      <Ionicons name="play" size={14} color={T.inputIcon} />
-                    </View>
-                  ) : (
-                    <Text
-                      style={[
-                        styles.unavailableText,
-                        { color: T.inputPlaceholder },
-                      ]}
-                    >
-                      Soon
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        {/* ── Album art ─────────────────────────────────────────────────── */}
+        <View style={styles.artWrapper}>
+          <Image source={{ uri: coverImage }} style={styles.albumArt} />
         </View>
 
-        {/* ── Related songs ────────────────────────────────────────────── */}
+        {/* ── Song info ─────────────────────────────────────────────────── */}
+        <View style={styles.infoRow}>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[styles.songTitle, { color: T.textPrimary }]}
+              numberOfLines={2}
+            >
+              {capitalise(hymn.title)}
+            </Text>
+            {hymn.composer ? (
+              <Text style={[styles.composerText, { color: T.textSecondary }]}>
+                {capitalise(hymn.composer)}
+              </Text>
+            ) : null}
+          </View>
+          {hymn.category ? (
+            <View
+              style={[
+                styles.categoryBadge,
+                { backgroundColor: Colors.primary + "18" },
+              ]}
+            >
+              <Text style={[styles.categoryText, { color: Colors.primary }]}>
+                {capitalise(hymn.category)}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* ── Voice parts ───────────────────────────────────────────────── */}
+        <View style={styles.partsSection}>
+          <Text style={[styles.partsHeading, { color: T.textSecondary }]}>
+            SELECT A PART
+          </Text>
+
+          <View
+            style={[
+              styles.partsCard,
+              { backgroundColor: T.cardBg, borderColor: T.border },
+            ]}
+          >
+            {/* Timeline line */}
+            <View style={[styles.timeline, { backgroundColor: T.border }]} />
+
+            {VOICE_PARTS.map((vp, index) => {
+              const isSelected = isThisHymnActive && activePart === vp.part;
+              const hasAudio = !!hymn.voiceParts?.[vp.part];
+              const isLast = index === VOICE_PARTS.length - 1;
+
+              return (
+                <View key={vp.part}>
+                  <TouchableOpacity
+                    style={styles.voiceRow}
+                    onPress={() => {
+                      if (hasAudio) play(hymn, vp.part);
+                    }}
+                    activeOpacity={hasAudio ? 0.75 : 1}
+                  >
+                    {/* Timeline dot */}
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        {
+                          backgroundColor: isSelected
+                            ? Colors.secondary
+                            : T.background,
+                          borderColor: isSelected ? Colors.secondary : T.border,
+                        },
+                      ]}
+                    />
+
+                    {/* Row content */}
+                    <View style={styles.voiceContent}>
+                      <View
+                        style={[
+                          styles.voiceIconWrap,
+                          {
+                            backgroundColor: isSelected
+                              ? "rgba(255,163,3,0.12)"
+                              : isDark
+                                ? "rgba(255,255,255,0.06)"
+                                : "rgba(0,0,0,0.05)",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            isSelected
+                              ? "musical-note"
+                              : "musical-notes-outline"
+                          }
+                          size={18}
+                          color={isSelected ? Colors.secondary : T.inputIcon}
+                        />
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[styles.voiceName, { color: T.textPrimary }]}
+                        >
+                          {vp.name}
+                        </Text>
+                        {isSelected && (
+                          <Text
+                            style={[
+                              styles.nowPlayingTag,
+                              { color: Colors.secondary },
+                            ]}
+                          >
+                            Now playing
+                          </Text>
+                        )}
+                      </View>
+
+                      {isSelected ? (
+                        <View
+                          style={[
+                            styles.activePill,
+                            { backgroundColor: Colors.secondary },
+                          ]}
+                        >
+                          <Ionicons name="volume-high" size={13} color="#fff" />
+                        </View>
+                      ) : hasAudio ? (
+                        <View
+                          style={[styles.playPill, { borderColor: T.border }]}
+                        >
+                          <Ionicons name="play" size={13} color={T.inputIcon} />
+                        </View>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.soonText,
+                            { color: T.inputPlaceholder },
+                          ]}
+                        >
+                          Soon
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {!isLast && (
+                    <View
+                      style={[styles.rowDivider, { backgroundColor: T.border }]}
+                    />
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Related songs ─────────────────────────────────────────────── */}
         {relatedSongs.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: T.textPrimary }]}>
-              Related Songs
+          <View style={styles.relatedSection}>
+            <Text style={[styles.partsHeading, { color: T.textSecondary }]}>
+              RELATED
             </Text>
             <View style={styles.relatedGrid}>
               {relatedSongs.map((song) => (
@@ -245,16 +291,27 @@ export default function HymnDetailScreen() {
                     style={[styles.relatedTitle, { color: T.textPrimary }]}
                     numberOfLines={1}
                   >
-                    {song.title}
+                    {capitalise(song.title)}
                   </Text>
+                  {song.composer ? (
+                    <Text
+                      style={[
+                        styles.relatedComposer,
+                        { color: T.textSecondary },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {capitalise(song.composer)}
+                    </Text>
+                  ) : null}
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         )}
 
-        {/* Bottom padding — extra space so MiniPlayer doesn't cover content */}
-        <View style={{ height: 120 }} />
+        {/* Space for MiniPlayer + tab bar */}
+        <View style={{ height: 160 }} />
       </ScrollView>
     </View>
   );
@@ -264,129 +321,114 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  // ── Top section ───────────────────────────────────────────────────────────
-  topSection: {
-    paddingTop: 52,
-    paddingBottom: 28,
-    paddingHorizontal: Spacing.lg,
+  // ── Top bar ───────────────────────────────────────────────────────────────
+  topBar: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 52,
+    paddingBottom: 12,
+    paddingHorizontal: Spacing.lg,
+    borderBottomWidth: 1,
   },
-  backButton: {
-    position: "absolute",
-    top: 52,
-    left: Spacing.lg,
-  },
-  backRect: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    borderWidth: 1,
+  navBtn: {
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
-  topTitle: {
-    fontSize: FontSizes.xl,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: 4,
-    marginTop: 4,
-    paddingHorizontal: 48,
+  topBarCenter: { flex: 1, alignItems: "center" },
+  topBarLabel: {
+    fontSize: FontSizes.xs,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
-  topComposer: {
-    fontSize: FontSizes.sm,
-    fontWeight: "500",
-    marginBottom: 20,
-  },
-  coverImage: {
-    width: 150,
-    height: 150,
-    borderRadius: BorderRadius.lg,
-  },
+  topBarTitle: { fontSize: FontSizes.sm, fontWeight: "700" },
 
-  // ── Voice parts ────────────────────────────────────────────────────────────
-  voiceContainer: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 24,
-    paddingLeft: 56,
-    paddingRight: Spacing.lg,
-    paddingBottom: 8,
-    marginTop: -20,
+  // ── Art ───────────────────────────────────────────────────────────────────
+  artWrapper: { alignItems: "center", paddingVertical: Spacing.xl },
+  albumArt: { width: 220, height: 220, borderRadius: BorderRadius.lg },
+
+  // ── Info ──────────────────────────────────────────────────────────────────
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  songTitle: { fontSize: FontSizes.xl, fontWeight: "800", marginBottom: 4 },
+  composerText: { fontSize: FontSizes.sm, fontWeight: "500" },
+  categoryBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 12,
+  },
+  categoryText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
+
+  // ── Parts ─────────────────────────────────────────────────────────────────
+  partsSection: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.xl },
+  partsHeading: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  partsCard: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: "hidden",
+    paddingLeft: 44,
   },
   timeline: {
     position: "absolute",
-    left: 28,
-    top: 24,
-    bottom: 24,
+    left: 20,
+    top: 28,
+    bottom: 28,
     width: 2,
   },
   timelineDot: {
     position: "absolute",
-    left: 20,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    left: -31,
+    top: 18,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 2,
-    top: 20,
   },
-  voiceRow: {
-    marginBottom: 16,
-  },
-  voiceCard: {
-    flexDirection: "row",
+  voiceRow: { paddingVertical: 14, paddingRight: 16 },
+  voiceContent: { flexDirection: "row", alignItems: "center", gap: 12 },
+  voiceIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
     alignItems: "center",
-    borderRadius: BorderRadius.md,
+  },
+  voiceName: { fontSize: FontSizes.sm, fontWeight: "600", marginBottom: 2 },
+  nowPlayingTag: { fontSize: FontSizes.xs, fontWeight: "500" },
+  activePill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  playPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 1,
-    padding: 12,
-    gap: 12,
-  },
-  voiceImage: {
-    width: 50,
-    height: 50,
-    borderRadius: BorderRadius.sm,
-  },
-  voiceTitle: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-    marginBottom: 3,
-  },
-  voiceSubtitle: {
-    fontSize: FontSizes.xs,
-    fontWeight: "500",
-  },
-  playingBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
-  playIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  unavailableText: {
-    fontSize: FontSizes.xs,
-    fontWeight: "600",
-  },
+  soonText: { fontSize: FontSizes.xs, fontWeight: "600" },
+  rowDivider: { height: 1, marginLeft: 0 },
 
-  // ── Related songs ──────────────────────────────────────────────────────────
-  section: {
-    marginTop: 24,
-    paddingHorizontal: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  relatedGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
+  // ── Related ───────────────────────────────────────────────────────────────
+  relatedSection: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.xl },
+  relatedGrid: { flexDirection: "row", gap: 12 },
   relatedCard: { flex: 1 },
   relatedImage: {
     width: "100%",
@@ -394,8 +436,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     marginBottom: 6,
   },
-  relatedTitle: {
-    fontSize: FontSizes.xs,
-    fontWeight: "600",
-  },
+  relatedTitle: { fontSize: FontSizes.xs, fontWeight: "700" },
+  relatedComposer: { fontSize: 10, fontWeight: "500", marginTop: 1 },
 });
