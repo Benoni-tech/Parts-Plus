@@ -2,8 +2,11 @@
 
 import { Slot, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { PlayerProvider } from "../src/Contexts/PlayerContext";
 import { AuthProvider } from "../src/Contexts/authContexts";
+import FullScreenPlayer from "../src/components/player/FullScreenPlayer";
+import MiniPlayer from "../src/components/player/MiniPlayer";
 import { useAuth } from "../src/hooks/useAuth";
 
 function RootLayoutNav() {
@@ -12,13 +15,13 @@ function RootLayoutNav() {
   const router = useRouter();
   const [splashDone, setSplashDone] = useState(false);
 
-  // ── 4 second splash gate — matches index.tsx progress bar duration ────────
+  // 4 second splash gate
   useEffect(() => {
     const timer = setTimeout(() => setSplashDone(true), 4000);
     return () => clearTimeout(timer);
   }, []);
 
-  // ── Navigation guard — only fires once splash and auth are both ready ─────
+  // Navigation guard
   useEffect(() => {
     if (!initialized || loading || !splashDone) return;
 
@@ -54,7 +57,6 @@ function RootLayoutNav() {
         const onVerifyEmail = inAuthGroup && segments[1] === "verify-email";
         const onVerifySuccess =
           inAuthGroup && segments[1] === "verification-success";
-
         if (!onVerifyEmail && !onVerifySuccess) {
           if (__DEV__)
             console.log("📍 Navigating to verify-email (unverified user)");
@@ -64,18 +66,30 @@ function RootLayoutNav() {
     }
   }, [user, user?.emailVerified, segments, initialized, loading, splashDone]);
 
-  // ── Always render Slot — index.tsx is the splash screen ──────────────────
-  // No ActivityIndicator here. index.tsx handles the visual splash experience.
-  // The splashDone timer gates navigation, not rendering.
-  return <Slot />;
+  return (
+    <View style={styles.root}>
+      {/* All screens */}
+      <Slot />
+
+      {/* ✅ MiniPlayer and FullScreenPlayer live here — above all screens,
+          persistent across all navigation */}
+      <MiniPlayer />
+      <FullScreenPlayer />
+    </View>
+  );
 }
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      {/* PlayerProvider wraps the entire app so any screen can trigger playback */}
+      <PlayerProvider>
+        <RootLayoutNav />
+      </PlayerProvider>
     </AuthProvider>
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});
