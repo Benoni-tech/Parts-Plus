@@ -1,9 +1,9 @@
 // app/_layout.tsx
 
 import { Slot, useRouter, useSegments } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { PlayerProvider } from "../src/Contexts/PlayerContext";
+import { PlayerProvider, usePlayer } from "../src/Contexts/PlayerContext";
 import { AuthProvider } from "../src/Contexts/authContexts";
 import FullScreenPlayer from "../src/components/player/FullScreenPlayer";
 import MiniPlayer from "../src/components/player/MiniPlayer";
@@ -11,15 +11,29 @@ import { useAuth } from "../src/hooks/useAuth";
 
 function RootLayoutNav() {
   const { user, loading, initialized } = useAuth();
+  const { stop } = usePlayer();
   const segments = useSegments() as string[];
   const router = useRouter();
   const [splashDone, setSplashDone] = useState(false);
+  const prevUserRef = useRef<string | null | undefined>(undefined);
 
   // 4 second splash gate
   useEffect(() => {
     const timer = setTimeout(() => setSplashDone(true), 4000);
     return () => clearTimeout(timer);
   }, []);
+
+  // ✅ Stop player whenever user logs out (handles both manual and automatic sign-out)
+  useEffect(() => {
+    if (!initialized) return;
+    const wasLoggedIn =
+      prevUserRef.current !== null && prevUserRef.current !== undefined;
+    const isNowLoggedOut = user === null;
+    if (wasLoggedIn && isNowLoggedOut) {
+      stop();
+    }
+    prevUserRef.current = user?.uid ?? null;
+  }, [user, initialized]);
 
   // Navigation guard
   useEffect(() => {
@@ -68,11 +82,7 @@ function RootLayoutNav() {
 
   return (
     <View style={styles.root}>
-      {/* All screens */}
       <Slot />
-
-      {/* ✅ MiniPlayer and FullScreenPlayer live here — above all screens,
-          persistent across all navigation */}
       <MiniPlayer />
       <FullScreenPlayer />
     </View>
@@ -82,7 +92,6 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      {/* PlayerProvider wraps the entire app so any screen can trigger playback */}
       <PlayerProvider>
         <RootLayoutNav />
       </PlayerProvider>

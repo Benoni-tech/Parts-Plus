@@ -10,7 +10,8 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { AuthTheme, Spacing } from "../../constants/colors";
+import { AuthTheme } from "../../constants/colors";
+import { usePlayer } from "../../Contexts/PlayerContext";
 import { useAuth } from "../../hooks/useAuth";
 import AccountSection from "./AccountSection";
 import ProfileBanner from "./ProfileBanner";
@@ -20,6 +21,7 @@ import UpgradeSection from "./UpgradeSection";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { stop } = usePlayer();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -33,6 +35,8 @@ export default function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           try {
+            // ✅ Stop and clear player before signing out
+            await stop();
             await signOut();
             router.replace("/auth/signin" as any);
           } catch (error: any) {
@@ -48,7 +52,6 @@ export default function ProfileScreen() {
       <StatusBar style={T.statusBar} />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* Banner */}
         <ProfileBanner
           user={user}
           isDark={isDark}
@@ -56,15 +59,10 @@ export default function ProfileScreen() {
           onEditPress={() => router.push("/profile/edit" as any)}
         />
 
-        {/* ── Sections ───────────────────────────────────────────────────── */}
         <View style={styles.sectionsContainer}>
-          {/* Upgrade — sits above Account */}
           <UpgradeSection isDark={isDark} T={T} currentPlan="free" />
-
-          <View style={styles.sectionGap} />
-
+          <View style={{ height: 16 }} />
           <AccountSection user={user} isDark={isDark} T={T} router={router} />
-
           <SupportSection isDark={isDark} T={T} />
           <SignOutButton isDark={isDark} T={T} onSignOut={handleSignOut} />
           <View style={{ height: 48 }} />
@@ -75,14 +73,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  mainBackground: {
-    flex: 1,
-  },
+  mainBackground: { flex: 1 },
   sectionsContainer: {
     paddingHorizontal: 16,
     marginBottom: 93,
-  },
-  sectionGap: {
-    height: Spacing.md,
   },
 });
