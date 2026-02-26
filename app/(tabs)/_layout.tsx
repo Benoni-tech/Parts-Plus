@@ -15,7 +15,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false, // we render custom labels ourselves
+        tabBarShowLabel: false,
         tabBarStyle: [
           styles.tabBar,
           {
@@ -36,7 +36,6 @@ export default function TabsLayout() {
               icon={focused ? "home" : "home-outline"}
               label="Home"
               color={color}
-              focused={focused}
             />
           ),
         }}
@@ -49,20 +48,18 @@ export default function TabsLayout() {
               icon={focused ? "search" : "search-outline"}
               label="Search"
               color={color}
-              focused={focused}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="library"
+        name="library/index"
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               icon={focused ? "library" : "library-outline"}
               label="Library"
               color={color}
-              focused={focused}
             />
           ),
         }}
@@ -75,11 +72,14 @@ export default function TabsLayout() {
               icon={focused ? "person" : "person-outline"}
               label="Profile"
               color={color}
-              focused={focused}
             />
           ),
         }}
       />
+
+      {/* ✅ Hide nested routes from tab bar completely — no ghost slots */}
+      <Tabs.Screen name="library/[tag]" options={{ href: null }} />
+      <Tabs.Screen name="library/playlist/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
@@ -88,12 +88,10 @@ function TabIcon({
   icon,
   label,
   color,
-  focused,
 }: {
   icon: any;
   label: string;
   color: string;
-  focused: boolean;
 }) {
   return (
     <View style={styles.tabItem}>
@@ -108,7 +106,6 @@ const styles = StyleSheet.create({
     height: Platform.OS === "ios" ? 80 : 62,
     borderTopWidth: 1,
     paddingTop: 8,
-    // ── No floating pill — full width flush to bottom like Spotify ──
     borderRadius: 0,
     position: "absolute",
     bottom: 0,
