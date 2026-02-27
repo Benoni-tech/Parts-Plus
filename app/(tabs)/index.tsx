@@ -1,7 +1,8 @@
-// app/tabs/index.tsx - FINAL FIXED VERSION
+// app/(tabs)/index.tsx
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
   Dimensions,
@@ -15,7 +16,14 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { BorderRadius, FontSizes, Spacing } from "../../src/constants/colors";
+import {
+  AuthTheme,
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
+} from "../../src/constants/colors";
+import { usePlayer } from "../../src/Contexts/PlayerContext";
 import { useAuth } from "../../src/hooks/useAuth";
 import {
   useHymns,
@@ -26,329 +34,370 @@ import {
 const { width } = Dimensions.get("window");
 const BANNER_WIDTH = width - Spacing.lg * 2;
 
+const capitalise = (s: string) =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
 export default function HomeScreen() {
-  const { user, userData } = useAuth(); // Now userData exists!
+  const { user, userData } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const T = isDark ? AuthTheme.dark : AuthTheme.light;
+  const { play } = usePlayer();
 
   const [activeSlide, setActiveSlide] = useState(0);
-  const bannerScrollRef = useRef<FlatList>(null);
+  const bannerRef = useRef<FlatList>(null);
 
-  // Fetch data
   const { hymns: allHymns, loading, refresh } = useHymns({});
-  const { hymns: popularHymns } = usePopularHymns(3);
+  const { hymns: featuredHymns } = usePopularHymns(3);
   const { hymns: recentHymns } = useRecentHymns(10);
 
-  // Get recently played
-  const recentlyPlayed = allHymns
-    .filter((h) => h.plays && h.plays > 0)
+  // Trending Chorus — category or tag matches chorus, sorted by plays
+  const trendingChorus = allHymns
+    .filter(
+      (h) =>
+        h.category?.toLowerCase().includes("chorus") ||
+        (h.tags as string[] | undefined)?.some(
+          (t) => t.toLowerCase() === "chorus",
+        ),
+    )
     .sort((a, b) => (b.plays || 0) - (a.plays || 0))
     .slice(0, 10);
 
-  const theme = {
-    background: isDark ? "#0A0A0A" : "#FFFFFF",
-    card: isDark ? "#1A1A1A" : "#F5F5F5",
-    text: isDark ? "#FFFFFF" : "#000000",
-    textSecondary: isDark ? "#999999" : "#666666",
-  };
+  // Made For You — top by play count
+  const madeForYou = [...allHymns]
+    .sort((a, b) => (b.plays || 0) - (a.plays || 0))
+    .slice(0, 10);
 
-  // Get display name (username from Firestore or fallback)
   const displayName =
     userData?.username || user?.email?.split("@")[0] || "Guest";
   const profileInitial = displayName.charAt(0).toUpperCase();
 
-  const categories = [
-    { id: "hymn", name: "Hymns", icon: "musical-notes" },
-    { id: "chorus", name: "Choruses", icon: "mic" },
-    { id: "spiritual", name: "Spiritual Songs", icon: "heart" },
-  ];
-
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={refresh} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {/* Profile Picture */}
-          <View style={styles.profilePic}>
-            {userData?.photoURL ? (
-              <Image
-                source={{ uri: userData.photoURL }}
-                style={styles.profileImage}
-              />
-            ) : (
-              <View style={styles.profilePlaceholder}>
-                <Text style={styles.profileInitial}>{profileInitial}</Text>
-              </View>
-            )}
-          </View>
+    <View style={[styles.root, { backgroundColor: T.background }]}>
+      <StatusBar style={T.statusBar as any} />
 
-          {/* Greeting */}
-          <View style={styles.greetingContainer}>
-            <Text style={[styles.greeting, { color: theme.text }]}>
-              Hello, {displayName}
-            </Text>
-            <Text style={[styles.subGreeting, { color: theme.textSecondary }]}>
-              What would you like to do today?
-            </Text>
-          </View>
-        </View>
-
-        {/* Notification Bell */}
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchSection}>
-        <TouchableOpacity
-          style={[styles.searchBar, { backgroundColor: theme.card }]}
-          onPress={() => router.push("/search" as any)}
-        >
-          <Ionicons name="search" size={20} color={theme.textSecondary} />
-          <Text
-            style={[styles.searchPlaceholder, { color: theme.textSecondary }]}
-          >
-            Search hymns, composers...
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Popular Banner */}
-      {popularHymns.length > 0 && (
-        <View style={styles.bannerSection}>
-          <FlatList
-            ref={bannerScrollRef}
-            data={popularHymns}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => {
-              const slideIndex = Math.round(
-                e.nativeEvent.contentOffset.x / BANNER_WIDTH,
-              );
-              setActiveSlide(slideIndex);
-            }}
-            renderItem={({ item }) => (
-              <View style={styles.bannerSlide}>
-                <Image
-                  source={{
-                    uri:
-                      item.coverImage ||
-                      `https://via.placeholder.com/400/14213D/FFFFFF?text=${item.title[0]}`,
-                  }}
-                  style={styles.bannerImage}
-                  blurRadius={15}
-                />
-                <View style={styles.bannerOverlay} />
-                <View style={styles.bannerContent}>
-                  <Text style={styles.bannerTitle}>{item.title}</Text>
-                  <Text style={styles.bannerDescription}>
-                    {item.composer} • {item.category}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.playButton}
-                    onPress={() => router.push(`/hymn/${item.id}` as any)}
-                  >
-                    <Text style={styles.playButtonText}>Play</Text>
-                  </TouchableOpacity>
-                </View>
-                {/* Dots */}
-                <View style={styles.dotsContainer}>
-                  {popularHymns.map((_, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.dot,
-                        index === activeSlide && styles.dotActive,
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
-            keyExtractor={(item) => item.id}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refresh}
+            tintColor={Colors.secondary}
           />
-        </View>
-      )}
-
-      {/* Categories */}
-      <View style={styles.categoriesSection}>
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={styles.categoryCard}
-            onPress={() =>
-              router.push(`/search?category=${category.id}` as any)
-            }
-          >
-            <View style={styles.categoryIconContainer}>
-              <Ionicons name={category.icon as any} size={24} color="#FCA311" />
+        }
+        contentContainerStyle={{ paddingBottom: 160 }}
+      >
+        {/* ── Header ──────────────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/profile" as any)}
+            >
+              {userData?.photoURL ? (
+                <Image
+                  source={{ uri: userData.photoURL }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.avatarPlaceholder,
+                    { backgroundColor: Colors.secondary },
+                  ]}
+                >
+                  <Text style={styles.avatarInitial}>{profileInitial}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <View style={{ marginLeft: Spacing.md }}>
+              <Text style={[styles.greeting, { color: T.textSecondary }]}>
+                Hello, {capitalise(displayName)}
+              </Text>
+              <Text style={[styles.subGreeting, { color: T.textSecondary }]}>
+                What would you like to do today?
+              </Text>
             </View>
-            <Text style={[styles.categoryName, { color: theme.text }]}>
-              {category.name}
-            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.notifBtn,
+              { backgroundColor: T.inputBg, borderColor: T.border },
+            ]}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={T.textPrimary}
+            />
           </TouchableOpacity>
-        ))}
-      </View>
+        </View>
 
-      {/* Recently Uploaded */}
-      {recentHymns.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+        {/* ── Featured Today banner ────────────────────────────────────── */}
+        {featuredHymns.length > 0 && (
+          <View style={styles.bannerSection}>
+            <FlatList
+              ref={bannerRef}
+              data={featuredHymns}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                setActiveSlide(
+                  Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH),
+                );
+              }}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.bannerSlide}>
+                  <Image
+                    source={{
+                      uri:
+                        item.coverImage ||
+                        `https://via.placeholder.com/400/${Colors.primary.replace("#", "")}/FFFFFF?text=${item.title[0]}`,
+                    }}
+                    style={styles.bannerImage}
+                    blurRadius={15}
+                  />
+                  <View style={styles.bannerOverlay} />
+                  <View style={styles.bannerContent}>
+                    {/* Featured Today label */}
+                    <View style={styles.featuredBadge}>
+                      <Text style={styles.featuredBadgeText}>
+                        Featured Today
+                      </Text>
+                    </View>
+                    <Text style={styles.bannerTitle} numberOfLines={2}>
+                      {capitalise(item.title)}
+                    </Text>
+                    <Text style={styles.bannerDescription} numberOfLines={1}>
+                      {[item.composer, item.category]
+                        .filter(Boolean)
+                        .map(capitalise)
+                        .join(" · ")}
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.playButton,
+                        { backgroundColor: Colors.secondary },
+                      ]}
+                      onPress={() => play(item, "soprano")}
+                    >
+                      <Ionicons name="play" size={14} color="#fff" />
+                      <Text style={styles.playButtonText}>Play</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {/* Dots */}
+                  <View style={styles.dotsContainer}>
+                    {featuredHymns.map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.dot,
+                          index === activeSlide && styles.dotActive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        )}
+
+        {/* ── Recently Uploaded ────────────────────────────────────────── */}
+        {recentHymns.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: T.textPrimary }]}>
               Recently Uploaded
             </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/see-all?section=recent" as any)}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.hScroll}
             >
-              <Text style={styles.seeAllText}>See All →</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {recentHymns.slice(0, 10).map((hymn) => (
-              <TouchableOpacity
-                key={hymn.id}
-                style={styles.hymnCard}
-                onPress={() => router.push(`/hymn/${hymn.id}` as any)}
-              >
-                <Image
-                  source={{
-                    uri:
-                      hymn.coverImage ||
-                      `https://via.placeholder.com/160/14213D/FFFFFF?text=${hymn.title[0]}`,
-                  }}
-                  style={styles.hymnCardImage}
-                />
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryBadgeText}>{hymn.category}</Text>
-                </View>
-                <View style={styles.hymnCardInfo}>
-                  <Text
-                    style={[styles.hymnCardTitle, { color: theme.text }]}
-                    numberOfLines={1}
-                  >
-                    {hymn.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.hymnCardMeta,
-                      { color: theme.textSecondary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {hymn.composer}
-                  </Text>
-                  {hymn.lyricist && (
-                    <Text
+              {recentHymns.map((hymn) => (
+                <TouchableOpacity
+                  key={hymn.id}
+                  style={styles.squareCard}
+                  onPress={() => router.push(`/hymn/${hymn.id}` as any)}
+                  activeOpacity={0.82}
+                >
+                  <Image
+                    source={{
+                      uri:
+                        hymn.coverImage ||
+                        `https://via.placeholder.com/160/${Colors.primary.replace("#", "")}/FFFFFF?text=${hymn.title[0]}`,
+                    }}
+                    style={styles.squareCardImage}
+                  />
+                  {hymn.category && (
+                    <View
                       style={[
-                        styles.hymnCardMeta,
-                        { color: theme.textSecondary },
+                        styles.squareBadge,
+                        { backgroundColor: Colors.secondary },
                       ]}
-                      numberOfLines={1}
                     >
-                      {hymn.lyricist}
-                    </Text>
+                      <Text style={styles.squareBadgeText}>
+                        {capitalise(hymn.category)}
+                      </Text>
+                    </View>
                   )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+                  <Text
+                    style={[styles.squareCardTitle, { color: T.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {capitalise(hymn.title)}
+                  </Text>
+                  <Text
+                    style={[styles.squareCardSub, { color: T.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {capitalise(hymn.composer || "")}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-      {/* Recently Played */}
-      {recentlyPlayed.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Recently Played
+        {/* ── Trending Chorus — list style ─────────────────────────────── */}
+        {trendingChorus.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: T.textPrimary }]}>
+              Trending Chorus
             </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/see-all?section=played" as any)}
+            <View
+              style={[
+                styles.listCard,
+                { backgroundColor: T.cardBg, borderColor: T.border },
+              ]}
             >
-              <Text style={styles.seeAllText}>See All →</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {recentlyPlayed.map((hymn) => (
-              <TouchableOpacity
-                key={hymn.id}
-                style={styles.hymnCard}
-                onPress={() => router.push(`/hymn/${hymn.id}` as any)}
-              >
-                <Image
-                  source={{
-                    uri:
-                      hymn.coverImage ||
-                      `https://via.placeholder.com/160/14213D/FFFFFF?text=${hymn.title[0]}`,
-                  }}
-                  style={styles.hymnCardImage}
-                />
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryBadgeText}>{hymn.category}</Text>
-                </View>
-                <View style={styles.hymnCardInfo}>
-                  <Text
-                    style={[styles.hymnCardTitle, { color: theme.text }]}
-                    numberOfLines={1}
+              {trendingChorus.map((hymn, index) => (
+                <View key={hymn.id}>
+                  <TouchableOpacity
+                    style={styles.listRow}
+                    onPress={() => router.push(`/hymn/${hymn.id}` as any)}
+                    activeOpacity={0.75}
                   >
-                    {hymn.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.hymnCardMeta,
-                      { color: theme.textSecondary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {hymn.composer}
-                  </Text>
-                  {hymn.lyricist && (
-                    <Text
-                      style={[
-                        styles.hymnCardMeta,
-                        { color: theme.textSecondary },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {hymn.lyricist}
+                    <Text style={[styles.listRank, { color: T.textSecondary }]}>
+                      {String(index + 1).padStart(2, "0")}
                     </Text>
+                    <Image
+                      source={{
+                        uri:
+                          hymn.coverImage ||
+                          `https://via.placeholder.com/48/${Colors.primary.replace("#", "")}/FFFFFF?text=${hymn.title[0]}`,
+                      }}
+                      style={styles.listThumb}
+                    />
+                    <View style={styles.listInfo}>
+                      <Text
+                        style={[styles.listTitle, { color: T.textPrimary }]}
+                        numberOfLines={1}
+                      >
+                        {capitalise(hymn.title)}
+                      </Text>
+                      <Text
+                        style={[styles.listSub, { color: T.textSecondary }]}
+                        numberOfLines={1}
+                      >
+                        {capitalise(hymn.composer || "")}
+                        {hymn.plays ? ` · ${hymn.plays} plays` : ""}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => play(hymn, "soprano")}
+                      style={[
+                        styles.listPlayBtn,
+                        { backgroundColor: Colors.secondary + "20" },
+                      ]}
+                    >
+                      <Ionicons
+                        name="play"
+                        size={14}
+                        color={Colors.secondary}
+                      />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                  {index < trendingChorus.length - 1 && (
+                    <View
+                      style={[
+                        styles.listDivider,
+                        { backgroundColor: T.border },
+                      ]}
+                    />
                   )}
                 </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+              ))}
+            </View>
+          </View>
+        )}
 
-      <View style={{ height: 100 }} />
-    </ScrollView>
+        {/* ── Made For You — cover image cards ────────────────────────── */}
+        {madeForYou.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: T.textPrimary }]}>
+              Made For You
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.hScroll}
+            >
+              {madeForYou.map((hymn) => (
+                <TouchableOpacity
+                  key={hymn.id}
+                  style={styles.squareCard}
+                  onPress={() => router.push(`/hymn/${hymn.id}` as any)}
+                  activeOpacity={0.82}
+                >
+                  <Image
+                    source={{
+                      uri:
+                        hymn.coverImage ||
+                        `https://via.placeholder.com/160/${Colors.primary.replace("#", "")}/FFFFFF?text=${hymn.title[0]}`,
+                    }}
+                    style={styles.squareCardImage}
+                  />
+                  {hymn.category && (
+                    <View
+                      style={[
+                        styles.squareBadge,
+                        { backgroundColor: Colors.primary + "cc" },
+                      ]}
+                    >
+                      <Text style={styles.squareBadgeText}>
+                        {capitalise(hymn.category)}
+                      </Text>
+                    </View>
+                  )}
+                  <Text
+                    style={[styles.squareCardTitle, { color: T.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {capitalise(hymn.title)}
+                  </Text>
+                  <Text
+                    style={[styles.squareCardSub, { color: T.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {capitalise(hymn.composer || "")}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  root: { flex: 1 },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -357,77 +406,32 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: Spacing.md,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  profilePic: {
-    marginRight: Spacing.md,
-  },
-  profileImage: {
+  headerLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
+  avatar: { width: 50, height: 50, borderRadius: 25 },
+  avatarPlaceholder: {
     width: 50,
     height: 50,
     borderRadius: 25,
-  },
-  profilePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#F97316",
     justifyContent: "center",
     alignItems: "center",
   },
-  profileInitial: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  greetingContainer: { flex: 1 },
-  greeting: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  subGreeting: {
-    fontSize: FontSizes.sm,
-  },
-  notificationButton: {
-    padding: Spacing.xs,
-  },
-  searchSection: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    gap: Spacing.sm,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    height: 50,
-    borderRadius: BorderRadius.md,
-    gap: Spacing.sm,
-  },
-  searchPlaceholder: {
-    fontSize: FontSizes.md,
-  },
-  filterButton: {
-    width: 50,
-    height: 50,
-    borderRadius: BorderRadius.md,
-    backgroundColor: "#F97316",
+  avatarInitial: { fontSize: 20, fontWeight: "700", color: "#fff" },
+  greeting: { fontSize: FontSizes.lg, fontWeight: "700", marginBottom: 2 },
+  subGreeting: { fontSize: FontSizes.sm },
+  notifBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
   },
-  bannerSection: {
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
+
+  // ── Banner ────────────────────────────────────────────────────────────────
+  bannerSection: { marginBottom: Spacing.lg },
   bannerSlide: {
     width: BANNER_WIDTH,
-    height: 180,
+    height: 200,
     marginHorizontal: Spacing.lg,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
@@ -440,35 +444,52 @@ const styles = StyleSheet.create({
   },
   bannerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0,0,0,0.52)",
   },
   bannerContent: {
     flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: Spacing.lg,
+    justifyContent: "flex-end",
+    padding: Spacing.lg,
+    gap: 4,
+  },
+  featuredBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  featuredBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.5,
   },
   bannerTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: Spacing.xs,
+    fontWeight: "800",
+    color: "#fff",
+    lineHeight: 26,
   },
   bannerDescription: {
     fontSize: FontSizes.sm,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginBottom: Spacing.md,
+    color: "rgba(255,255,255,0.8)",
   },
   playButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     alignSelf: "flex-start",
-    backgroundColor: "#F97316",
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.lg,
+    marginTop: 6,
   },
   playButtonText: {
     fontSize: FontSizes.md,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#fff",
   },
   dotsContainer: {
     flexDirection: "row",
@@ -480,99 +501,86 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.5)",
   },
   dotActive: {
-    backgroundColor: "#F97316",
-    width: 24,
+    backgroundColor: Colors.secondary,
+    width: 18,
   },
-  categoriesSection: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  categoryCard: {
-    flex: 1,
-    backgroundColor: "#E5E5E5",
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    alignItems: "center",
-  },
-  categoryIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(252, 163, 17, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  categoryName: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  section: {
-    marginBottom: Spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
+
+  // ── Section ───────────────────────────────────────────────────────────────
+  section: { marginBottom: Spacing.xl },
   sectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: "700",
-  },
-  seeAllText: {
-    fontSize: FontSizes.sm,
-    color: "#FCA311",
-    fontWeight: "600",
-  },
-  horizontalScroll: {
+    fontWeight: "800",
+    marginBottom: 14,
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
   },
-  hymnCard: {
-    width: 160,
-    position: "relative",
-  },
-  hymnCardImage: {
-    width: 160,
-    height: 160,
+  hScroll: { paddingHorizontal: Spacing.lg, gap: 12 },
+
+  // ── Square cards (Recently Uploaded & Made For You) ───────────────────────
+  squareCard: { width: 148 },
+  squareCardImage: {
+    width: 148,
+    height: 148,
     borderRadius: BorderRadius.md,
-    backgroundColor: "#E5E5E5",
+    marginBottom: 8,
+    backgroundColor: "#e5e7eb",
   },
-  categoryBadge: {
+  squareBadge: {
     position: "absolute",
-    top: Spacing.sm,
-    left: Spacing.sm,
-    backgroundColor: "#FCA311",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
   },
-  categoryBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    textTransform: "uppercase",
+  squareBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: 0.3,
   },
-  hymnCardInfo: {
-    marginTop: Spacing.sm,
-  },
-  hymnCardTitle: {
-    fontSize: FontSizes.md,
+  squareCardTitle: {
+    fontSize: FontSizes.sm,
     fontWeight: "700",
     marginBottom: 2,
   },
-  hymnCardMeta: {
-    fontSize: FontSizes.xs,
+  squareCardSub: { fontSize: FontSizes.xs, fontWeight: "500" },
+
+  // ── Trending Chorus list ───────────────────────────────────────────────────
+  listCard: {
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: "hidden",
   },
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  listRank: {
+    width: 22,
+    fontSize: FontSizes.xs,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  listThumb: { width: 46, height: 46, borderRadius: BorderRadius.sm },
+  listInfo: { flex: 1 },
+  listTitle: { fontSize: FontSizes.sm, fontWeight: "700", marginBottom: 2 },
+  listSub: { fontSize: FontSizes.xs, fontWeight: "500" },
+  listPlayBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  listDivider: { height: 1, marginLeft: 16 + 22 + 12 + 46 + 12 },
 });

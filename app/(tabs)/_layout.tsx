@@ -57,7 +57,7 @@ export default function TabsLayout() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={focused ? "library" : "library-outline"}
+              icon={focused ? "albums" : "albums-outline"}
               label="Library"
               color={color}
             />
@@ -69,7 +69,7 @@ export default function TabsLayout() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={focused ? "person" : "person-outline"}
+              icon={focused ? "person-circle" : "person-circle-outline"}
               label="Profile"
               color={color}
             />
