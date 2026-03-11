@@ -17,7 +17,6 @@ import AccountSection from "./AccountSection";
 import ProfileBanner from "./ProfileBanner";
 import SignOutButton from "./SignOutButton";
 import SupportSection from "./SupportSection";
-import UpgradeSection from "./UpgradeSection";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -60,7 +59,7 @@ export default function ProfileScreen() {
         />
 
         <View style={styles.sectionsContainer}>
-          <UpgradeSection isDark={isDark} T={T} currentPlan="free" />
+          {/*<UpgradeSection isDark={isDark} T={T} currentPlan="free" />*/}
           <View style={{ height: 16 }} />
           <AccountSection user={user} isDark={isDark} T={T} router={router} />
           <SupportSection isDark={isDark} T={T} />

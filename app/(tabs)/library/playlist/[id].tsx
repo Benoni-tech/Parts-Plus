@@ -5,30 +5,30 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 import {
-    AuthTheme,
-    BorderRadius,
-    Colors,
-    FontSizes,
-    Spacing,
+  AuthTheme,
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
 } from "../../../../src/constants/colors";
 import { usePlayer } from "../../../../src/Contexts/PlayerContext";
 import { useAuth } from "../../../../src/hooks/useAuth";
 import { useHymns } from "../../../../src/hooks/useHymns";
 import playlistService, {
-    Playlist,
+  Playlist,
 } from "../../../../src/services/playlistService";
 
 const capitalise = (s: string) =>

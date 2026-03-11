@@ -102,14 +102,32 @@ export default function SearchScreen() {
     });
   }, []);
 
+  const removeRecent = (term: string) => {
+    setRecentSearches((p) => p.filter((r) => r !== term));
+  };
+
+  // Save to recent AND clear the input
+  const handleClearInput = () => {
+    if (query.trim()) addToRecent(query.trim());
+    setQuery("");
+  };
+
+  // Tap a result → save term, navigate
   const handleResultPress = (item: any) => {
     addToRecent(query.trim());
     router.push(`/hymn/${item.id}`);
   };
 
+  // Tap a recent chip → restore it into the search bar
   const handleRecentTap = (term: string) => {
     setQuery(term);
     inputRef.current?.focus();
+  };
+
+  // Blur → save whatever was typed so recents always populate
+  const handleBlur = () => {
+    setIsFocused(false);
+    if (query.trim()) addToRecent(query.trim());
   };
 
   // ── Top Result card ────────────────────────────────────────────────────────
@@ -204,7 +222,7 @@ export default function SearchScreen() {
           value={query}
           onChangeText={setQuery}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onBlur={handleBlur}
           onSubmitEditing={() => {
             if (query.trim()) addToRecent(query.trim());
           }}
@@ -214,7 +232,7 @@ export default function SearchScreen() {
         />
         {query.length > 0 && (
           <TouchableOpacity
-            onPress={() => setQuery("")}
+            onPress={handleClearInput}
             hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
           >
             <Ionicons name="close-circle" size={18} color={T.inputIcon} />
@@ -267,71 +285,116 @@ export default function SearchScreen() {
           <ActivityIndicator color={Colors.secondary} />
         </View>
       ) : !isTyping ? (
-        /* Idle — recent searches */
-        <FlatList
-          data={recentSearches}
-          keyExtractor={(item) => item}
-          contentContainerStyle={[
-            styles.listContent,
-            recentSearches.length === 0 && { flex: 1 },
-          ]}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            recentSearches.length > 0 ? (
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: T.textPrimary }]}>
-                  Recent Searches
-                </Text>
-                <TouchableOpacity onPress={() => setRecentSearches([])}>
-                  <Text style={[styles.clearAll, { color: Colors.secondary }]}>
-                    Clear all
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View style={styles.centered}>
-              <Ionicons
-                name="musical-notes-outline"
-                size={48}
-                color={T.textSecondary}
-              />
-              <Text style={[styles.emptyText, { color: T.textSecondary }]}>
-                Search for hymns, composers or voices
-              </Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.recentRow, { borderBottomColor: T.border }]}
-              onPress={() => handleRecentTap(item)}
-              activeOpacity={0.75}
-            >
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={T.textSecondary}
-                style={{ marginRight: 12 }}
-              />
-              <Text
-                style={[styles.recentText, { color: T.textPrimary }]}
-                numberOfLines={1}
-              >
-                {item}
+        /* Idle — show recent searches if any, else true empty state */
+        recentSearches.length === 0 ? (
+          /* No history — original empty state */
+          <View style={styles.centered}>
+            <Ionicons
+              name="musical-notes-outline"
+              size={48}
+              color={T.textSecondary}
+            />
+            <Text style={[styles.emptyText, { color: T.textSecondary }]}>
+              Search for hymns, composers or voices
+            </Text>
+          </View>
+        ) : (
+          /* Has history — pill list */
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Section header */}
+            <View style={styles.recentHeader}>
+              <Text style={[styles.recentHeading, { color: T.textPrimary }]}>
+                Recent Searches
               </Text>
               <TouchableOpacity
-                onPress={() =>
-                  setRecentSearches((p) => p.filter((r) => r !== item))
-                }
+                onPress={() => setRecentSearches([])}
                 hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-                style={{ marginLeft: "auto" }}
               >
-                <Ionicons name="close" size={16} color={T.textSecondary} />
+                <Text style={[styles.clearAll, { color: T.textSecondary }]}>
+                  Clear
+                </Text>
               </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-        />
+            </View>
+
+            {/* Grouped card */}
+            <View
+              style={[
+                styles.recentList,
+                { backgroundColor: T.cardBg, borderColor: T.border },
+              ]}
+            >
+              {recentSearches.map((item, index) => (
+                <React.Fragment key={item}>
+                  <TouchableOpacity
+                    style={styles.recentRow}
+                    onPress={() => handleRecentTap(item)}
+                    activeOpacity={0.72}
+                  >
+                    {/* Circle search icon */}
+                    <View
+                      style={[
+                        styles.recentIconWrap,
+                        {
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.07)"
+                            : "rgba(0,0,0,0.05)",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="search-outline"
+                        size={14}
+                        color={T.textSecondary}
+                      />
+                    </View>
+
+                    {/* Term */}
+                    <Text
+                      style={[styles.recentText, { color: T.textPrimary }]}
+                      numberOfLines={1}
+                    >
+                      {item}
+                    </Text>
+
+                    {/* Dismiss button */}
+                    <TouchableOpacity
+                      onPress={() => removeRecent(item)}
+                      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                      style={[
+                        styles.recentDismiss,
+                        {
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.07)"
+                            : "rgba(0,0,0,0.05)",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="close"
+                        size={13}
+                        color={T.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+
+                  {/* Divider — skip after last row */}
+                  {index < recentSearches.length - 1 && (
+                    <View
+                      style={[
+                        styles.recentDivider,
+                        { backgroundColor: T.border },
+                      ]}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          </ScrollView>
+        )
       ) : filtered.length === 0 ? (
         /* No results */
         <View style={styles.centered}>
@@ -347,6 +410,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id ?? item.title}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <>
               {topResult && (
@@ -477,7 +541,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginBottom: 14,
   },
-  clearAll: { fontSize: FontSizes.xs, fontWeight: "600" },
 
   // ── Top result card ────────────────────────────────────────────────────────
   topCard: {
@@ -527,13 +590,53 @@ const styles = StyleSheet.create({
   resultSub: { fontSize: FontSizes.xs, fontWeight: "500" },
 
   // ── Recent searches ────────────────────────────────────────────────────────
+  recentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  recentHeading: {
+    fontSize: FontSizes.sm,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  clearAll: { fontSize: FontSizes.xs, fontWeight: "600" },
+  recentList: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
   recentRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    gap: 12,
   },
-  recentText: { fontSize: FontSizes.sm, fontWeight: "500", flex: 1 },
+  recentIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  recentText: {
+    fontSize: FontSizes.sm,
+    fontWeight: "500",
+    flex: 1,
+  },
+  recentDismiss: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  recentDivider: {
+    height: 1,
+    marginLeft: 56,
+  },
 
   // ── Empty ─────────────────────────────────────────────────────────────────
   emptyText: { fontSize: FontSizes.sm, textAlign: "center", lineHeight: 22 },

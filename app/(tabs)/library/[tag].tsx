@@ -5,21 +5,21 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useMemo } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 import {
-    AuthTheme,
-    BorderRadius,
-    Colors,
-    FontSizes,
-    Spacing,
+  AuthTheme,
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
 } from "../../../src/constants/colors";
 import { usePlayer } from "../../../src/Contexts/PlayerContext";
 import { useHymns } from "../../../src/hooks/useHymns";
