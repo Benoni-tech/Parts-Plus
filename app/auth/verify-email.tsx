@@ -15,7 +15,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import Animated, { FadeIn, FadeInUp, ZoomIn } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import {
   AuthTheme,
   BorderRadius,
@@ -154,28 +154,6 @@ export default function VerifyEmailScreen() {
               tintColor="#ffffff"
             />
 
-            {/* Icon — mail or checkmark depending on state */}
-            <Animated.View
-              entering={ZoomIn.duration(500).delay(200)}
-              style={[
-                styles.iconCircle,
-                {
-                  backgroundColor: isVerified
-                    ? "rgba(34,197,94,0.20)"
-                    : "rgba(255,255,255,0.15)",
-                  borderColor: isVerified
-                    ? "rgba(34,197,94,0.40)"
-                    : "rgba(255,255,255,0.30)",
-                },
-              ]}
-            >
-              <Ionicons
-                name={isVerified ? "checkmark-circle" : "mail-open-outline"}
-                size={52}
-                color={isVerified ? "#22c55e" : "#ffffff"}
-              />
-            </Animated.View>
-
             {/* Title + subtitle inside banner */}
             <Animated.Text
               entering={FadeInUp.duration(500).delay(300)}
@@ -195,30 +173,6 @@ export default function VerifyEmailScreen() {
 
           {/* ── Body ── */}
           <View style={styles.body}>
-            {/* Email address chip */}
-            {user?.email && (
-              <Animated.View
-                entering={FadeInUp.duration(500).delay(420)}
-                style={[
-                  styles.emailChip,
-                  { backgroundColor: T.inputBg, borderColor: T.inputBorder },
-                ]}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={16}
-                  color={T.inputIcon}
-                  style={{ marginRight: 8 }}
-                />
-                <Text
-                  style={[styles.emailChipText, { color: T.inputText }]}
-                  numberOfLines={1}
-                >
-                  {user.email}
-                </Text>
-              </Animated.View>
-            )}
-
             {/* Message */}
             <Animated.Text
               entering={FadeInUp.duration(500).delay(450)}
@@ -375,18 +329,10 @@ const styles = StyleSheet.create({
     height: 72,
     marginBottom: 4,
   },
-  iconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 1.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   bannerTitle: {
     fontSize: FontSizes.xl,
     fontWeight: "900",
-    color: "#ffffff",
+    color: Colors.secondary,
     letterSpacing: 0.2,
     textAlign: "center",
   },
@@ -399,16 +345,6 @@ const styles = StyleSheet.create({
 
   // ── Body ──────────────────────────────────────────────────────────────────
   body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 36, gap: 16 },
-
-  emailChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  emailChipText: { fontSize: FontSizes.sm, fontWeight: "600", flex: 1 },
 
   message: {
     fontSize: FontSizes.sm,
