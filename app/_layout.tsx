@@ -2,12 +2,23 @@
 
 import { Slot, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { PlayerProvider, usePlayer } from "../src/Contexts/PlayerContext";
 import { AuthProvider } from "../src/Contexts/authContexts";
 import FullScreenPlayer from "../src/components/player/FullScreenPlayer";
 import MiniPlayer from "../src/components/player/MiniPlayer";
 import { useAuth } from "../src/hooks/useAuth";
+
+// ─── Global font scale cap ────────────────────────────────────────────────────
+// Prevents system-level font size (accessibility settings) from breaking layouts.
+// 1.2 = allows up to 20% scaling above base — respects accessibility without
+// destroying UI. Applied once here, affects every Text and TextInput in the app.
+(Text as any).defaultProps = (Text as any).defaultProps || {};
+(Text as any).defaultProps.maxFontSizeMultiplier = 1.2;
+
+(TextInput as any).defaultProps = (TextInput as any).defaultProps || {};
+(TextInput as any).defaultProps.maxFontSizeMultiplier = 1.2;
+// ─────────────────────────────────────────────────────────────────────────────
 
 function RootLayoutNav() {
   const { user, loading, initialized } = useAuth();
@@ -23,7 +34,7 @@ function RootLayoutNav() {
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ Stop player whenever user logs out (handles both manual and automatic sign-out)
+  // Stop player whenever user logs out (handles both manual and automatic sign-out)
   useEffect(() => {
     if (!initialized) return;
     const wasLoggedIn =

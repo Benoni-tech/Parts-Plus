@@ -27,12 +27,10 @@ import {
 import { useAuth } from "../../src/hooks/useAuth";
 import { SignUpFormData, signUpSchema } from "../../src/schemas/authSchemas";
 
-// ─── Grid overlay ─────────────────────────────────────────────────────────────
 function GridOverlay({ isDark }: { isDark: boolean }) {
   const cols = 8;
   const rows = 5;
   const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
-
   return (
     <View style={gridStyles.container} pointerEvents="none">
       {Array.from({ length: cols }).map((_, i) => {
@@ -77,7 +75,6 @@ const gridStyles = StyleSheet.create({
   horizontal: { left: 0, right: 0, height: 1 },
 });
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function SignUpScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
@@ -122,8 +119,6 @@ export default function SignUpScreen() {
     setLoading(true);
     try {
       await signUp(formData.email, formData.password, username.trim());
-      // ✅ No navigation here — _layout.tsx detects the new unverified user
-      // via onAuthStateChanged and routes to /auth/verify-email automatically.
     } catch (error: any) {
       setLoading(false);
       let msg = "Failed to create account";
@@ -203,7 +198,6 @@ export default function SignUpScreen() {
   return (
     <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
       <StatusBar style={T.statusBar} />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kavWrapper}
@@ -225,7 +219,7 @@ export default function SignUpScreen() {
               },
             ]}
           >
-            {/* ── Top banner ─────────────────────────────────────────── */}
+            {/* ── Banner ── */}
             <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
               <View style={styles.bannerLeft}>
                 <View style={styles.bannerTopRow}>
@@ -242,7 +236,6 @@ export default function SignUpScreen() {
                   >
                     <Ionicons name="arrow-back" size={16} color={T.backArrow} />
                   </TouchableOpacity>
-
                   <Image
                     source={require("../../assets/images/logo.png")}
                     style={styles.logoImage}
@@ -251,7 +244,6 @@ export default function SignUpScreen() {
                     tintColor="#ffffff"
                   />
                 </View>
-
                 <View style={styles.bannerTextBlock}>
                   <Text style={[styles.bannerTitle, { color: T.titleColor }]}>
                     Get Started
@@ -263,13 +255,12 @@ export default function SignUpScreen() {
                   </Text>
                 </View>
               </View>
-
               <View style={styles.bannerRight}>
                 <GridOverlay isDark={isDark} />
               </View>
             </View>
 
-            {/* ── Form ───────────────────────────────────────────────── */}
+            {/* ── Form ── */}
             <View style={styles.form}>
               {renderInput(
                 "Username",
@@ -378,11 +369,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   mainBackground: { flex: 1 },
   kavWrapper: { flex: 1 },
-  outerScroll: {
-    flexGrow: 1,
-    alignItems: "center",
-    paddingVertical: 40,
-  },
+  outerScroll: { flexGrow: 1, alignItems: "center", paddingVertical: 40 },
   card: {
     width: "98%",
     maxWidth: 440,
@@ -398,24 +385,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     margin: 12,
     marginBottom: 0,
-    height: 220,
+    minHeight: 180, // ✅ flexible — no fixed height
     flexDirection: "row",
     overflow: "hidden",
   },
-  backAbsolute: { position: "absolute", left: 0, top: 0, zIndex: 5 },
   bannerLeft: {
     flex: 1,
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 18,
+    paddingBottom: 20,
     justifyContent: "space-between",
     zIndex: 2,
   },
-  bannerTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
+  bannerTopRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  backAbsolute: { position: "absolute", left: 0, top: 0, zIndex: 5 },
   backCircle: {
     width: 34,
     height: 34,
@@ -424,25 +407,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  logoImage: { width: 220, height: 110 },
+  logoImage: { width: 200, height: 80 },
   bannerTextBlock: { marginTop: Spacing.sm },
   bannerTitle: {
-    fontSize: FontSizes.xxl,
+    fontSize: FontSizes.xl,
     fontWeight: "900",
     letterSpacing: 0.2,
-    marginBottom: 5,
-    marginTop: -15,
+    marginBottom: 6,
   },
-  bannerSubtitle: { fontSize: 16.5, lineHeight: 18, marginBottom: 30 },
-  bannerRight: { width: 150, overflow: "hidden" },
-  form: {
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 36,
+  bannerSubtitle: {
+    fontSize: FontSizes.sm,
+    lineHeight: FontSizes.sm * 1.5,
   },
+  bannerRight: { width: 130, overflow: "hidden" },
+  form: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 36 },
   inputContainer: { marginBottom: 14 },
   label: {
-    fontSize: 11,
+    fontSize: FontSizes.xs,
     fontWeight: "600",
     marginBottom: 6,
     letterSpacing: 0.5,
@@ -457,9 +438,14 @@ const styles = StyleSheet.create({
     height: 50,
   },
   inputIcon: { marginRight: 8 },
-  input: { flex: 1, fontSize: 14 },
+  input: { flex: 1, fontSize: FontSizes.sm },
   eyeIcon: { padding: 6 },
-  errorText: { fontSize: 11, color: "#ff6b6b", marginTop: 4, marginLeft: 4 },
+  errorText: {
+    fontSize: FontSizes.xs,
+    color: "#ff6b6b",
+    marginTop: 4,
+    marginLeft: 4,
+  },
   buttonSpacer: { height: 22 },
   signUpButton: {
     borderRadius: BorderRadius.lg,
@@ -474,7 +460,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   buttonDisabled: { opacity: 0.55 },
-  signUpButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  signUpButtonText: { fontSize: FontSizes.md, fontWeight: "600", flex: 1 },
   arrowCircle: {
     width: 36,
     height: 36,
@@ -488,6 +474,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-  signInText: { fontSize: 13 },
-  signInLink: { fontSize: 13, fontWeight: "700" },
+  signInText: { fontSize: FontSizes.sm },
+  signInLink: { fontSize: FontSizes.sm, fontWeight: "700" },
 });

@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,59 +16,15 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeIn, FadeInUp, ZoomIn } from "react-native-reanimated";
-import { AuthTheme, BorderRadius, FontSizes } from "../../src/constants/colors";
+import {
+  AuthTheme,
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
+} from "../../src/constants/colors";
 import { useAuth } from "../../src/hooks/useAuth";
 
-// ─── Grid overlay ─────────────────────────────────────────────────────────────
-function GridOverlay({ isDark }: { isDark: boolean }) {
-  const cols = 8;
-  const rows = 5;
-  const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
-  return (
-    <View style={gridStyles.container} pointerEvents="none">
-      {Array.from({ length: cols }).map((_, i) => {
-        const progress = i / (cols - 1);
-        return (
-          <View
-            key={`v-${i}`}
-            style={[
-              gridStyles.line,
-              gridStyles.vertical,
-              {
-                left: `${progress * 100}%` as any,
-                opacity: isDark ? progress * 0.95 : progress * 0.6,
-                backgroundColor: lineColor,
-              },
-            ]}
-          />
-        );
-      })}
-      {Array.from({ length: rows }).map((_, i) => (
-        <View
-          key={`h-${i}`}
-          style={[
-            gridStyles.line,
-            gridStyles.horizontal,
-            {
-              top: `${(i / (rows - 1)) * 100}%` as any,
-              opacity: isDark ? 0.3 : 0.22,
-              backgroundColor: lineColor,
-            },
-          ]}
-        />
-      ))}
-    </View>
-  );
-}
-
-const gridStyles = StyleSheet.create({
-  container: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
-  line: { position: "absolute" },
-  vertical: { top: 0, bottom: 0, width: 1 },
-  horizontal: { left: 0, right: 0, height: 1 },
-});
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const {
@@ -90,13 +47,11 @@ export default function VerifyEmailScreen() {
 
   const displayUsername = userData?.username ?? user?.displayName ?? "";
 
-  // Poll every 10 seconds
   useEffect(() => {
     if (user?.emailVerified) {
       setIsVerified(true);
       return;
     }
-
     pollRef.current = setInterval(async () => {
       try {
         await refreshUser();
@@ -104,18 +59,13 @@ export default function VerifyEmailScreen() {
         if (verified && !hasNavigated.current) {
           setIsVerified(true);
           if (pollRef.current) clearInterval(pollRef.current);
-
-          // 2 second delay so user sees button activate before routing
           setTimeout(() => {
             hasNavigated.current = true;
             router.replace("/(tabs)" as any);
           }, 2000);
         }
-      } catch (_) {
-        // silently ignore — retries on next interval
-      }
+      } catch (_) {}
     }, 10000);
-
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -148,7 +98,7 @@ export default function VerifyEmailScreen() {
   const handleStartOver = () => {
     Alert.alert(
       "Start Over?",
-      "This will permanently delete your current account. You'll need to sign up again with the correct email. Are you sure?",
+      "This will permanently delete your current account. You'll need to sign up again. Are you sure?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -164,7 +114,7 @@ export default function VerifyEmailScreen() {
               setDeletingAccount(false);
               Alert.alert(
                 "Error",
-                error.message || "Failed to delete account. Please try again.",
+                error.message || "Failed to delete account.",
               );
             }
           },
@@ -175,7 +125,7 @@ export default function VerifyEmailScreen() {
 
   return (
     <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
-      <StatusBar style={T.statusBar} />
+      <StatusBar style="light" />
 
       <ScrollView
         contentContainerStyle={styles.outerScroll}
@@ -193,69 +143,96 @@ export default function VerifyEmailScreen() {
             },
           ]}
         >
-          {/* ── Top banner ───────────────────────────────────────────── */}
+          {/* ── Top banner — solid colour with logo, no grid ── */}
           <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
-            <View style={styles.bannerLeft}>
-              <Animated.View
-                entering={ZoomIn.duration(500).delay(200)}
-                style={styles.bannerIconRow}
-              >
-                <View
-                  style={[
-                    styles.iconCircle,
-                    {
-                      backgroundColor: isVerified
-                        ? "rgba(34,197,94,0.15)"
-                        : `${T.btnArrowBg}22`,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={isVerified ? "checkmark-circle" : "mail-open-outline"}
-                    size={44}
-                    color={isVerified ? "#22c55e" : T.btnArrowBg}
-                  />
-                </View>
-              </Animated.View>
+            {/* Logo centered */}
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+              // @ts-ignore
+              tintColor="#ffffff"
+            />
 
-              <View style={styles.bannerTextBlock}>
-                <Animated.Text
-                  entering={FadeInUp.duration(500).delay(300)}
-                  style={[styles.bannerTitle, { color: T.titleColor }]}
-                >
-                  {displayUsername
-                    ? `Hi, ${displayUsername}!`
-                    : "Check Your Email"}
-                </Animated.Text>
-                <Animated.Text
-                  entering={FadeInUp.duration(500).delay(400)}
-                  style={[styles.bannerSubtitle, { color: T.subtitleColor }]}
-                >
-                  {isVerified
-                    ? "You're all verified!"
-                    : "Your account has been created"}
-                </Animated.Text>
-              </View>
-            </View>
+            {/* Icon — mail or checkmark depending on state */}
+            <Animated.View
+              entering={ZoomIn.duration(500).delay(200)}
+              style={[
+                styles.iconCircle,
+                {
+                  backgroundColor: isVerified
+                    ? "rgba(34,197,94,0.20)"
+                    : "rgba(255,255,255,0.15)",
+                  borderColor: isVerified
+                    ? "rgba(34,197,94,0.40)"
+                    : "rgba(255,255,255,0.30)",
+                },
+              ]}
+            >
+              <Ionicons
+                name={isVerified ? "checkmark-circle" : "mail-open-outline"}
+                size={52}
+                color={isVerified ? "#22c55e" : "#ffffff"}
+              />
+            </Animated.View>
 
-            <View style={styles.bannerRight}>
-              <GridOverlay isDark={isDark} />
-            </View>
+            {/* Title + subtitle inside banner */}
+            <Animated.Text
+              entering={FadeInUp.duration(500).delay(300)}
+              style={styles.bannerTitle}
+            >
+              {displayUsername ? `Hi, ${displayUsername}!` : "Check Your Email"}
+            </Animated.Text>
+            <Animated.Text
+              entering={FadeInUp.duration(500).delay(400)}
+              style={styles.bannerSubtitle}
+            >
+              {isVerified
+                ? "You're all verified!"
+                : "Your account has been created"}
+            </Animated.Text>
           </View>
 
-          {/* ── Body ─────────────────────────────────────────────────── */}
+          {/* ── Body ── */}
           <View style={styles.body}>
-            {/* ── Main message ── */}
+            {/* Email address chip */}
+            {user?.email && (
+              <Animated.View
+                entering={FadeInUp.duration(500).delay(420)}
+                style={[
+                  styles.emailChip,
+                  { backgroundColor: T.inputBg, borderColor: T.inputBorder },
+                ]}
+              >
+                <Ionicons
+                  name="mail-outline"
+                  size={16}
+                  color={T.inputIcon}
+                  style={{ marginRight: 8 }}
+                />
+                <Text
+                  style={[styles.emailChipText, { color: T.inputText }]}
+                  numberOfLines={1}
+                >
+                  {user.email}
+                </Text>
+              </Animated.View>
+            )}
+
+            {/* Message */}
             <Animated.Text
               entering={FadeInUp.duration(500).delay(450)}
               style={[styles.message, { color: T.labelColor }]}
             >
               {isVerified
-                ? "Your email has been verified. You're all set — tap the button below to start streaming."
-                : `We've sent a verification link to ${user?.email ?? "your email"}. Click the link to activate your account and the button below will unlock automatically.\n\nCan't find it? Check your spam folder.`}
+                ? "Your email has been verified successfully. You're all set — tap the button below to start streaming."
+                : "We've sent a verification link to the address above. Click the link in the email to activate your account and the button below will unlock automatically.\n\nCan't find it? Check your spam folder."}
             </Animated.Text>
 
-            {/* ── Go to Home button ── */}
+            {/* Divider */}
+            <View style={[styles.divider, { backgroundColor: T.border }]} />
+
+            {/* Go to Home button */}
             <Animated.View entering={FadeInUp.duration(500).delay(550)}>
               <TouchableOpacity
                 style={[
@@ -274,7 +251,7 @@ export default function VerifyEmailScreen() {
                     { color: isVerified ? T.btnText : "#9ca3af" },
                   ]}
                 >
-                  Go to Home
+                  {isVerified ? "Go to Home" : "Waiting for verification…"}
                 </Text>
                 <View
                   style={[
@@ -288,41 +265,58 @@ export default function VerifyEmailScreen() {
                     },
                   ]}
                 >
-                  <Ionicons
-                    name="arrow-forward"
-                    size={18}
-                    color={isVerified ? T.btnArrow : "#9ca3af"}
-                  />
+                  {isVerified ? (
+                    <Ionicons
+                      name="arrow-forward"
+                      size={18}
+                      color={T.btnArrow}
+                    />
+                  ) : (
+                    <ActivityIndicator size="small" color="#9ca3af" />
+                  )}
                 </View>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* ── Resend — hidden once verified ── */}
+            {/* Resend */}
             {!isVerified && (
               <Animated.View
                 entering={FadeInUp.duration(500).delay(650)}
-                style={styles.resendRow}
+                style={styles.actionRow}
               >
                 <TouchableOpacity
                   onPress={handleResend}
                   disabled={resending}
-                  style={styles.resendButton}
+                  style={[
+                    styles.secondaryButton,
+                    { borderColor: T.inputBorder, backgroundColor: T.inputBg },
+                  ]}
                 >
                   {resending ? (
-                    <ActivityIndicator color={T.btnArrowBg} size="small" />
+                    <ActivityIndicator color={Colors.secondary} size="small" />
                   ) : (
-                    <Text style={[styles.resendText, { color: T.labelColor }]}>
-                      Didn't receive it?{" "}
-                      <Text style={{ color: T.btnArrowBg, fontWeight: "700" }}>
+                    <>
+                      <Ionicons
+                        name="refresh-outline"
+                        size={16}
+                        color={Colors.secondary}
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        style={[
+                          styles.secondaryButtonText,
+                          { color: Colors.secondary },
+                        ]}
+                      >
                         Resend Email
                       </Text>
-                    </Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </Animated.View>
             )}
 
-            {/* ── Start over — hidden once verified ── */}
+            {/* Start over */}
             {!isVerified && (
               <Animated.View
                 entering={FadeInUp.duration(500).delay(750)}
@@ -331,13 +325,14 @@ export default function VerifyEmailScreen() {
                 <TouchableOpacity
                   onPress={handleStartOver}
                   disabled={deletingAccount}
-                  style={styles.startOverButton}
                 >
                   {deletingAccount ? (
                     <ActivityIndicator color="#ff6b6b" size="small" />
                   ) : (
-                    <Text style={styles.startOverText}>
-                      Wrong email or still having issues?{" "}
+                    <Text
+                      style={[styles.startOverText, { color: T.labelColor }]}
+                    >
+                      Wrong email?{" "}
                       <Text style={styles.startOverLink}>Start Over</Text>
                     </Text>
                   )}
@@ -353,11 +348,8 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   mainBackground: { flex: 1 },
-  outerScroll: {
-    flexGrow: 1,
-    alignItems: "center",
-    paddingVertical: 48,
-  },
+  outerScroll: { flexGrow: 1, alignItems: "center", paddingVertical: 48 },
+
   card: {
     width: "98%",
     maxWidth: 440,
@@ -369,42 +361,62 @@ const styles = StyleSheet.create({
     shadowRadius: 32,
     elevation: 20,
   },
+
+  // ── Banner — solid colour, no grid ────────────────────────────────────────
   topBanner: {
-    borderRadius: 20,
-    margin: 12,
-    marginBottom: 0,
-    height: 220,
-    flexDirection: "row",
-    overflow: "hidden",
+    paddingTop: 36,
+    paddingBottom: 32,
+    paddingHorizontal: Spacing.xl,
+    alignItems: "center",
+    gap: 16,
   },
-  bannerLeft: {
-    flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 18,
-    justifyContent: "space-between",
-    zIndex: 2,
+  logoImage: {
+    width: 180,
+    height: 72,
+    marginBottom: 4,
   },
-  bannerIconRow: { flexDirection: "row", alignItems: "center" },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 1.5,
     justifyContent: "center",
     alignItems: "center",
   },
-  bannerTextBlock: {},
   bannerTitle: {
     fontSize: FontSizes.xl,
     fontWeight: "900",
+    color: "#ffffff",
     letterSpacing: 0.2,
-    marginBottom: 15,
-    marginTop: 15,
+    textAlign: "center",
   },
-  bannerSubtitle: { fontSize: 16.5, lineHeight: 18, marginBottom: 30 },
-  bannerRight: { width: 150, overflow: "hidden" },
-  body: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 36 },
-  message: { fontSize: FontSizes.sm, lineHeight: 22, marginBottom: 24 },
+  bannerSubtitle: {
+    fontSize: FontSizes.sm,
+    color: "rgba(255,255,255,0.65)",
+    lineHeight: FontSizes.sm * 1.5,
+    textAlign: "center",
+  },
+
+  // ── Body ──────────────────────────────────────────────────────────────────
+  body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 36, gap: 16 },
+
+  emailChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  emailChipText: { fontSize: FontSizes.sm, fontWeight: "600", flex: 1 },
+
+  message: {
+    fontSize: FontSizes.sm,
+    lineHeight: FontSizes.sm * 1.6,
+  },
+
+  divider: { height: 1 },
+
   primaryButton: {
     borderRadius: BorderRadius.lg,
     paddingVertical: 16,
@@ -418,13 +430,13 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   buttonDisabled: {
-    backgroundColor: "rgba(156,163,175,0.15)",
+    backgroundColor: "rgba(156,163,175,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(156,163,175,0.25)",
+    borderColor: "rgba(156,163,175,0.20)",
     shadowOpacity: 0,
     elevation: 0,
   },
-  primaryButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  primaryButtonText: { fontSize: FontSizes.md, fontWeight: "600", flex: 1 },
   arrowCircle: {
     width: 36,
     height: 36,
@@ -432,18 +444,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  resendRow: { alignItems: "center", marginTop: 20 },
-  resendButton: { paddingVertical: 8 },
-  resendText: { fontSize: FontSizes.sm, textAlign: "center" },
-  startOverRow: { alignItems: "center", marginTop: 12 },
-  startOverButton: { paddingVertical: 8 },
-  startOverText: {
-    fontSize: FontSizes.sm,
-    textAlign: "center",
-    color: "#9ca3af",
+
+  actionRow: { alignItems: "stretch" },
+  secondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
+    paddingVertical: 14,
   },
-  startOverLink: {
-    color: "#ff6b6b",
-    fontWeight: "700",
-  },
+  secondaryButtonText: { fontSize: FontSizes.sm, fontWeight: "700" },
+
+  startOverRow: { alignItems: "center" },
+  startOverText: { fontSize: FontSizes.sm, textAlign: "center" },
+  startOverLink: { color: "#ff6b6b", fontWeight: "700" },
 });

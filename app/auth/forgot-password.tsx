@@ -21,17 +21,16 @@ import {
 import {
   AuthTheme,
   BorderRadius,
+  Colors,
   FontSizes,
   Spacing,
 } from "../../src/constants/colors";
 import { useAuth } from "../../src/hooks/useAuth";
 
-// ─── Grid overlay ─────────────────────────────────────────────────────────────
 function GridOverlay({ isDark }: { isDark: boolean }) {
   const cols = 8;
   const rows = 5;
   const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
-
   return (
     <View style={gridStyles.container} pointerEvents="none">
       {Array.from({ length: cols }).map((_, i) => {
@@ -76,7 +75,6 @@ const gridStyles = StyleSheet.create({
   horizontal: { left: 0, right: 0, height: 1 },
 });
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { resetPassword } = useAuth();
@@ -87,61 +85,45 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // ── Success modal state ──────────────────────────────────────────────────
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [sentToEmail, setSentToEmail] = useState("");
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
   const handleResetPassword = async () => {
     setError("");
-
     if (!email.trim()) {
       setError("Email is required");
       return;
     }
-
     if (!validateEmail(email)) {
       setError("Please enter a valid email address");
       return;
     }
-
     setLoading(true);
     try {
       await resetPassword(email.trim());
-      // Store email for modal display, then show modal instead of Alert
       setSentToEmail(email.trim());
       setShowSuccessModal(true);
     } catch (error: any) {
       setLoading(false);
       let msg = "Failed to send reset email";
-      if (error.code === "auth/user-not-found") {
+      if (error.code === "auth/user-not-found")
         msg = "No account found with this email";
-      } else if (error.code === "auth/invalid-email") {
+      else if (error.code === "auth/invalid-email")
         msg = "Invalid email address";
-      } else if (error.code === "auth/network-request-failed") {
+      else if (error.code === "auth/network-request-failed")
         msg = "Network error. Please check your connection";
-      } else if (error.message) {
-        msg = error.message;
-      }
+      else if (error.message) msg = error.message;
       setError(msg);
     }
-  };
-
-  const handleModalConfirm = () => {
-    setShowSuccessModal(false);
-    router.back();
   };
 
   return (
     <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
       <StatusBar style={T.statusBar} />
 
-      {/* ── Success Modal ─────────────────────────────────────────────────── */}
+      {/* ── Success Modal — matches verify-email style ── */}
       <Modal
         visible={showSuccessModal}
         transparent
@@ -159,38 +141,39 @@ export default function ForgotPasswordScreen() {
               },
             ]}
           >
-            {/* Modal banner — bannerBg + grid, envelope icon centered */}
+            {/* Banner — solid colour, logo only — no grid, no icon circle */}
             <View style={[styles.modalBanner, { backgroundColor: T.bannerBg }]}>
-              <GridOverlay isDark={isDark} />
-              <View style={styles.modalBannerContent} pointerEvents="none">
-                <Text style={styles.modalEmoji}>📧</Text>
-              </View>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                style={styles.modalLogo}
+                resizeMode="contain"
+                // @ts-ignore
+                tintColor="#ffffff"
+              />
+              <Text style={styles.modalBannerTitle}>Check Your Email</Text>
+              <Text style={styles.modalBannerSubtitle}>Reset link sent!</Text>
             </View>
 
-            {/* Modal body */}
+            {/* Body */}
             <View style={styles.modalBody}>
-              <Text style={[styles.modalTitle, { color: T.titleColor }]}>
-                Check Your Email
-              </Text>
-              <Text style={[styles.modalSubtitle, { color: T.subtitleColor }]}>
-                Reset link sent!
-              </Text>
               <Text style={[styles.modalMessage, { color: T.labelColor }]}>
-                We've sent password reset instructions to{" "}
-                <Text style={{ color: T.signInLink, fontWeight: "600" }}>
-                  {sentToEmail}
-                </Text>
-                . Please check your inbox and follow the link to reset your
-                password.
+                We've sent password reset instructions to the address above.
+                Follow the link in the email to reset your password.{"\n\n"}
+                Can't find it? Check your spam folder.
               </Text>
 
-              {/* Confirm button — same pill style as auth screens */}
+              <View style={[styles.divider, { backgroundColor: T.border }]} />
+
+              {/* Button */}
               <TouchableOpacity
                 style={[
                   styles.modalButton,
                   { backgroundColor: T.btnBg, shadowColor: T.shadow },
                 ]}
-                onPress={handleModalConfirm}
+                onPress={() => {
+                  setShowSuccessModal(false);
+                  router.back();
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modalButtonText, { color: T.btnText }]}>
@@ -198,7 +181,7 @@ export default function ForgotPasswordScreen() {
                 </Text>
                 <View
                   style={[
-                    styles.modalArrowCircle,
+                    styles.arrowCircle,
                     { backgroundColor: T.btnArrowBg },
                   ]}
                 >
@@ -210,6 +193,7 @@ export default function ForgotPasswordScreen() {
         </View>
       </Modal>
 
+      {/* ── Main screen ── */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kavWrapper}
@@ -221,7 +205,6 @@ export default function ForgotPasswordScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* ── Card ─────────────────────────────────────────────────── */}
           <View
             style={[
               styles.card,
@@ -232,13 +215,9 @@ export default function ForgotPasswordScreen() {
               },
             ]}
           >
-            {/* ── Top banner ─────────────────────────────────────────── */}
             <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
-              {/* Left column */}
               <View style={styles.bannerLeft}>
-                {/* Row 1: back button absolutely positioned, logo independent */}
                 <View style={styles.bannerTopRow}>
-                  {/* Back button — absolutely pinned top-left, decoupled from logo */}
                   <TouchableOpacity
                     style={[
                       styles.backCircle,
@@ -252,8 +231,6 @@ export default function ForgotPasswordScreen() {
                   >
                     <Ionicons name="arrow-back" size={16} color={T.backArrow} />
                   </TouchableOpacity>
-
-                  {/* Logo sits independently beside the absolute button space */}
                   <Image
                     source={require("../../assets/images/logo.png")}
                     style={styles.logoImage}
@@ -262,8 +239,6 @@ export default function ForgotPasswordScreen() {
                     tintColor="#ffffff"
                   />
                 </View>
-
-                {/* Row 2: text block pinned to bottom via parent space-between */}
                 <View style={styles.bannerTextBlock}>
                   <Text style={[styles.bannerTitle, { color: T.titleColor }]}>
                     Reset Password
@@ -275,14 +250,11 @@ export default function ForgotPasswordScreen() {
                   </Text>
                 </View>
               </View>
-
-              {/* Right column: fading grid */}
               <View style={styles.bannerRight}>
                 <GridOverlay isDark={isDark} />
               </View>
             </View>
 
-            {/* ── Form ───────────────────────────────────────────────── */}
             <View style={styles.form}>
               <View style={styles.inputContainer}>
                 <Text style={[styles.label, { color: T.labelColor }]}>
@@ -308,8 +280,8 @@ export default function ForgotPasswordScreen() {
                     placeholder="johndoe@gmail.com"
                     placeholderTextColor={T.inputPlaceholder}
                     value={email}
-                    onChangeText={(text) => {
-                      setEmail(text);
+                    onChangeText={(t) => {
+                      setEmail(t);
                       setError("");
                     }}
                     keyboardType="email-address"
@@ -320,7 +292,6 @@ export default function ForgotPasswordScreen() {
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
               </View>
 
-              {/* Info message */}
               <View style={styles.infoContainer}>
                 <Ionicons
                   name="information-circle-outline"
@@ -334,7 +305,6 @@ export default function ForgotPasswordScreen() {
                 </Text>
               </View>
 
-              {/* ── Button ──────────────────────────────────────────── */}
               <View style={styles.buttonSpacer} />
               <TouchableOpacity
                 style={[
@@ -371,7 +341,6 @@ export default function ForgotPasswordScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Back to Sign In link */}
               <View style={styles.backToSignInContainer}>
                 <Text
                   style={[styles.backToSignInText, { color: T.signInText }]}
@@ -394,24 +363,12 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  mainBackground: {
-    flex: 1,
-  },
-  kavWrapper: {
-    flex: 1,
-  },
-  outerScroll: {
-    flexGrow: 1,
-
-    alignItems: "center",
-    paddingVertical: 48,
-  },
-
-  // ── Card ─────────────────────────────────────────────────────────────────
+  mainBackground: { flex: 1 },
+  kavWrapper: { flex: 1 },
+  outerScroll: { flexGrow: 1, alignItems: "center", paddingVertical: 48 },
   card: {
-    width: "98%",
+    width: "99%",
     maxWidth: 440,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
@@ -422,12 +379,12 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
 
-  // ── Banner ────────────────────────────────────────────────────────────────
+  // ── Main screen banner ────────────────────────────────────────────────────
   topBanner: {
     borderRadius: 20,
     margin: 12,
     marginBottom: 0,
-    height: 220,
+    minHeight: 180,
     flexDirection: "row",
     overflow: "hidden",
   },
@@ -435,21 +392,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 18,
+    paddingBottom: 20,
     justifyContent: "space-between",
     zIndex: 2,
   },
-  bannerTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  backAbsolute: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    zIndex: 5,
-  },
+  bannerTopRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  backAbsolute: { position: "absolute", left: 0, top: 0, zIndex: 5 },
   backCircle: {
     width: 34,
     height: 34,
@@ -458,39 +406,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  logoImage: {
-    width: 220,
-    height: 110,
-  },
-  bannerTextBlock: {
-    marginTop: Spacing.sm,
-  },
+  logoImage: { width: 200, height: 80 },
+  bannerTextBlock: { marginTop: Spacing.sm },
   bannerTitle: {
     fontSize: FontSizes.xl,
     fontWeight: "700",
     letterSpacing: 0.2,
-    marginBottom: 5,
-    marginTop: -15,
+    marginBottom: 6,
   },
-  bannerSubtitle: {
-    fontSize: 16.5,
-    lineHeight: 18,
-    marginBottom: 30,
-  },
-  bannerRight: {
-    width: 150,
-    overflow: "hidden",
-  },
+  bannerSubtitle: { fontSize: FontSizes.sm, lineHeight: FontSizes.sm * 1.5 },
+  bannerRight: { width: 130, overflow: "hidden" },
 
-  // ── Form ─────────────────────────────────────────────────────────────────
-  form: {
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 36,
-  },
+  // ── Form ──────────────────────────────────────────────────────────────────
+  form: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 36 },
   inputContainer: { marginBottom: 14 },
   label: {
-    fontSize: 11,
+    fontSize: FontSizes.xs,
     fontWeight: "600",
     marginBottom: 6,
     letterSpacing: 0.5,
@@ -505,22 +436,20 @@ const styles = StyleSheet.create({
     height: 50,
   },
   inputIcon: { marginRight: 8 },
-  input: { flex: 1, fontSize: 14 },
-  errorText: { fontSize: 11, color: "#ff6b6b", marginTop: 4, marginLeft: 4 },
-
+  input: { flex: 1, fontSize: FontSizes.sm },
+  errorText: {
+    fontSize: FontSizes.xs,
+    color: "#ff6b6b",
+    marginTop: 4,
+    marginLeft: 4,
+  },
   infoContainer: {
     flexDirection: "row",
     alignItems: "flex-start",
     paddingHorizontal: 4,
     marginTop: 8,
   },
-  infoText: {
-    fontSize: 12,
-    lineHeight: 18,
-    flex: 1,
-  },
-
-  // ── Button ────────────────────────────────────────────────────────────────
+  infoText: { fontSize: FontSizes.xs, lineHeight: FontSizes.xs * 1.5, flex: 1 },
   buttonSpacer: { height: 22 },
   resetButton: {
     borderRadius: BorderRadius.lg,
@@ -535,7 +464,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   buttonDisabled: { opacity: 0.55 },
-  resetButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  resetButtonText: { fontSize: FontSizes.md, fontWeight: "600", flex: 1 },
   arrowCircle: {
     width: 36,
     height: 36,
@@ -543,28 +472,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // ── Footer link ───────────────────────────────────────────────────────────
   backToSignInContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 20,
   },
-  backToSignInText: { fontSize: 13 },
-  backToSignInLink: { fontSize: 13, fontWeight: "700" },
+  backToSignInText: { fontSize: FontSizes.sm },
+  backToSignInLink: { fontSize: FontSizes.sm, fontWeight: "700" },
 
-  // ── Success Modal ─────────────────────────────────────────────────────────
+  // ── Success modal ─────────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
+    backgroundColor: "rgba(0,0,0,0.75)",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
   },
   modalCard: {
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 400,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     overflow: "hidden",
@@ -573,42 +500,39 @@ const styles = StyleSheet.create({
     shadowRadius: 32,
     elevation: 24,
   },
+  // Solid colour banner — no grid, centered content
   modalBanner: {
-    height: 110,
-    overflow: "hidden",
-  },
-  modalBannerContent: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingHorizontal: Spacing.xl,
     alignItems: "center",
+    gap: 12,
   },
-  modalEmoji: {
-    fontSize: 48,
+  modalLogo: { width: 160, height: 84 },
+  modalBannerTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "900",
+    color: Colors.secondary,
+    letterSpacing: 0.2,
+    textAlign: "center",
+  },
+  modalBannerSubtitle: {
+    fontSize: FontSizes.sm,
+    color: "rgba(255,255,255,0.65)",
+    lineHeight: FontSizes.sm * 1.5,
+    textAlign: "center",
   },
   modalBody: {
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 28,
+    gap: 14,
   },
-  modalTitle: {
-    fontSize: FontSizes.xl,
-    fontWeight: "900",
-    letterSpacing: 0.2,
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  modalMessage: {
-    fontSize: FontSizes.sm,
-    lineHeight: 20,
-    marginBottom: 24,
-  },
+  modalMessage: { fontSize: FontSizes.sm, lineHeight: FontSizes.sm * 1.6 },
+  divider: { height: 1 },
   modalButton: {
     borderRadius: BorderRadius.lg,
-    paddingVertical: 15,
+    paddingVertical: 16,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -618,16 +542,5 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  modalButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    flex: 1,
-  },
-  modalArrowCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  modalButtonText: { fontSize: FontSizes.md, fontWeight: "600", flex: 1 },
 });

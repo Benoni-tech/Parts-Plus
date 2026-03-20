@@ -1,16 +1,20 @@
 // src/constants/colors.ts
 
-export const Colors = {
-  // ─── Brand Primitives ────────────────────────────────────────────────────────
-  primary: "#182F48", // navy — main backgrounds, banners, cards in light mode
-  secondary: "#ffa303", // orange — buttons, active states, accents, links
+import { Dimensions, PixelRatio } from "react-native";
 
-  // ─── Semantic ────────────────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const BASE_WIDTH = 390;
+const scale = Math.min(Math.max(SCREEN_WIDTH / BASE_WIDTH, 0.85), 1.2);
+
+const normalize = (size: number): number =>
+  Math.round(PixelRatio.roundToNearestPixel(size * scale));
+
+export const Colors = {
+  primary: "#182F48",
+  secondary: "#ffa303",
   error: "#FF3B30",
   success: "#34C759",
   warning: "#FF9500",
-
-  // ─── Gradients (static — never mode-aware) ───────────────────────────────────
   gradients: {
     primary: ["#182F48", "#0f1f30"] as const,
     hero: ["#1A1A2E", "#16213E", "#0F3460"] as const,
@@ -20,8 +24,6 @@ export const Colors = {
     yellow: ["#FFD93D", "#F9CA24"] as const,
     orange: ["#ffa303", "#e08c00"] as const,
   },
-
-  // ─── Accents (static) ────────────────────────────────────────────────────────
   accents: {
     red: "#FF6B6B",
     teal: "#4ECDC4",
@@ -51,16 +53,15 @@ export const BorderRadius = {
 };
 
 export const FontSizes = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 24,
-  xxl: 32,
-  xxxl: 40,
+  xs: normalize(12),
+  sm: normalize(14),
+  md: normalize(16),
+  lg: normalize(18),
+  xl: normalize(22),
+  xxl: normalize(28),
+  xxxl: normalize(36),
 };
 
-// ─── Shadow Presets ───────────────────────────────────────────────────────────
 export const Shadows = {
   small: {
     shadowColor: "#000",
@@ -92,7 +93,6 @@ export const Shadows = {
   },
 };
 
-// ─── Animation Durations ──────────────────────────────────────────────────────
 export const AnimationDurations = {
   fast: 150,
   normal: 300,
@@ -100,7 +100,6 @@ export const AnimationDurations = {
   verySlow: 800,
 };
 
-// ─── Z-index Layers ───────────────────────────────────────────────────────────
 export const ZIndex = {
   background: -1,
   base: 0,
@@ -110,7 +109,6 @@ export const ZIndex = {
   tooltip: 10000,
 };
 
-// ─── Auth Theme Type ──────────────────────────────────────────────────────────
 export type AuthThemeType = {
   mainBg: string;
   cardBg: string;
@@ -138,7 +136,6 @@ export type AuthThemeType = {
   btnArrow: string;
   signInText: string;
   signInLink: string;
-  // ─── App-wide tokens ──────────────────────────────────────────────────────
   background: string;
   card: string;
   textPrimary: string;
@@ -150,55 +147,35 @@ export type AuthThemeType = {
   shadow: string;
 };
 
-// ─── App-wide Theme Tokens ────────────────────────────────────────────────────
-// Single source of truth for all mode-aware colours across the entire app.
-// Usage: const T = useColorScheme() === "dark" ? AuthTheme.dark : AuthTheme.light;
-
 export const AuthTheme = {
   dark: {
-    // Backgrounds
     mainBg: "#0a0a0a",
     cardBg: "#161616",
     cardBorder: "rgba(255,255,255,0.10)",
-
-    // Banner
     bannerBg: "#222222",
     backRectBg: "rgba(255,255,255,0.12)",
     backRectBorder: "rgba(255,255,255,0.22)",
     backArrow: "#ffffff",
     titleColor: "#ffffff",
     subtitleColor: "rgba(255,255,255,0.60)",
-
-    // Grid lines
     gridLine: "rgb(255,255,255)",
     gridLineTint: "#e8e0d0",
-
-    // Form labels
     labelColor: "rgba(255,255,255,0.55)",
-
-    // Input fields
     inputBg: "#2a2a2a",
     inputBorder: "rgba(255,255,255,0.22)",
     inputBorderFocus: "rgba(255,255,255,0.50)",
     inputText: "#ffffff",
     inputPlaceholder: "rgba(255,255,255,0.38)",
     inputIcon: "rgba(255,255,255,0.50)",
-
-    // Misc
     checkboxBorder: "rgba(255,255,255,0.30)",
     rememberText: "rgba(255,255,255,0.45)",
-
-    // Buttons
-    btnBg: "#ffa303",
-    btnText: "#0a0a0a",
+    // ✅ Navy button in dark mode — orange arrow circle accent
+    btnBg: "#182F48",
+    btnText: "#ffffff",
     btnArrowBg: "#ffa303",
-    btnArrow: "#0a0a0a",
-
-    // Links
+    btnArrow: "#182F48",
     signInText: "rgba(255,255,255,0.45)",
     signInLink: "#ffa303",
-
-    // ─── App-wide ───────────────────────────────────────────────────────────
     background: "#0a0a0a",
     card: "#161616",
     textPrimary: "#ffffff",
@@ -206,55 +183,38 @@ export const AuthTheme = {
     border: "rgba(255,255,255,0.10)",
     overlay: "rgba(0,0,0,0.55)",
     overlayDark: "rgba(0,0,0,0.80)",
-
     statusBar: "light" as const,
     shadow: "#000000",
   },
 
   light: {
-    // Backgrounds
     mainBg: "#ffffff",
     cardBg: "#ffffff",
     cardBorder: "rgba(0,0,0,0.07)",
-
-    // Banner
     bannerBg: "#182F48",
     backRectBg: "rgba(255,255,255,0.15)",
     backRectBorder: "rgba(255,255,255,0.30)",
     backArrow: "#ffffff",
     titleColor: "#ffa303",
     subtitleColor: "rgba(255,255,255,0.65)",
-
-    // Grid lines
     gridLine: "rgba(255,255,255,0.55)",
     gridLineTint: "#ffffff",
-
-    // Labels
     labelColor: "#666666",
-
-    // Input fields
     inputBg: "#f5f5f5",
     inputBorder: "#d8d8d8",
     inputBorderFocus: "#aaaaaa",
     inputText: "#111111",
     inputPlaceholder: "#bbbbbb",
     inputIcon: "#aaaaaa",
-
-    // Misc
     checkboxBorder: "#cccccc",
     rememberText: "#999999",
-
-    // Buttons
+    // ✅ Navy button in light mode too — orange arrow circle accent
     btnBg: "#182F48",
     btnText: "#ffffff",
     btnArrowBg: "#ffa303",
     btnArrow: "#182F48",
-
-    // Links
     signInText: "#999999",
     signInLink: "#182F48",
-
-    // ─── App-wide ───────────────────────────────────────────────────────────
     background: "#f5f5f5",
     card: "#ffffff",
     textPrimary: "#111111",
@@ -262,7 +222,6 @@ export const AuthTheme = {
     border: "rgba(0,0,0,0.07)",
     overlay: "rgba(0,0,0,0.30)",
     overlayDark: "rgba(0,0,0,0.60)",
-
     statusBar: "dark" as const,
     shadow: "#00000018",
   },

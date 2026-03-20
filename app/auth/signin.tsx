@@ -27,12 +27,10 @@ import {
 import { useAuth } from "../../src/hooks/useAuth";
 import { SignInFormData, signInSchema } from "../../src/schemas/authSchemas";
 
-// ─── Grid overlay ─────────────────────────────────────────────────────────────
 function GridOverlay({ isDark }: { isDark: boolean }) {
   const cols = 8;
   const rows = 5;
   const lineColor = isDark ? "#ffffff" : "rgba(255,255,255,0.85)";
-
   return (
     <View style={gridStyles.container} pointerEvents="none">
       {Array.from({ length: cols }).map((_, i) => {
@@ -77,7 +75,6 @@ const gridStyles = StyleSheet.create({
   horizontal: { left: 0, right: 0, height: 1 },
 });
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function SignInScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
@@ -113,28 +110,23 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       await signIn(formData.email, formData.password);
-      // Navigation handled by auth state change
     } catch (error: any) {
       setLoading(false);
       let msg = "Failed to sign in";
-      if (error.code === "auth/user-not-found") {
+      if (error.code === "auth/user-not-found")
         msg = "No account found with this email";
-      } else if (error.code === "auth/wrong-password") {
-        msg = "Incorrect password";
-      } else if (error.code === "auth/invalid-email") {
+      else if (error.code === "auth/wrong-password") msg = "Incorrect password";
+      else if (error.code === "auth/invalid-email")
         msg = "Invalid email address";
-      } else if (error.code === "auth/user-disabled") {
+      else if (error.code === "auth/user-disabled")
         msg = "This account has been disabled";
-      } else if (error.code === "auth/network-request-failed") {
+      else if (error.code === "auth/network-request-failed")
         msg = "Network error. Please check your connection";
-      } else if (error.message) {
-        msg = error.message;
-      }
+      else if (error.message) msg = error.message;
       Alert.alert("Sign In Failed", msg);
     }
   };
 
-  // ── Reusable input renderer ──────────────────────────────────────────────
   const renderInput = (
     label: string,
     icon: string,
@@ -198,7 +190,6 @@ export default function SignInScreen() {
   return (
     <View style={[styles.mainBackground, { backgroundColor: T.mainBg }]}>
       <StatusBar style={T.statusBar} />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.kavWrapper}
@@ -210,7 +201,6 @@ export default function SignInScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* ── Card ─────────────────────────────────────────────────── */}
           <View
             style={[
               styles.card,
@@ -221,13 +211,10 @@ export default function SignInScreen() {
               },
             ]}
           >
-            {/* ── Top banner ─────────────────────────────────────────── */}
+            {/* ── Banner — no fixed height, grows with content ── */}
             <View style={[styles.topBanner, { backgroundColor: T.bannerBg }]}>
-              {/* Left column */}
               <View style={styles.bannerLeft}>
-                {/* Row 1: back button absolutely positioned + logo independently */}
                 <View style={styles.bannerTopRow}>
-                  {/* Back button — absolutely pinned to top-left, decoupled from logo */}
                   <TouchableOpacity
                     style={[
                       styles.backCircle,
@@ -241,8 +228,6 @@ export default function SignInScreen() {
                   >
                     <Ionicons name="arrow-back" size={16} color={T.backArrow} />
                   </TouchableOpacity>
-
-                  {/* Logo sits independently to the right of the absolute button space */}
                   <Image
                     source={require("../../assets/images/logo.png")}
                     style={styles.logoImage}
@@ -251,8 +236,6 @@ export default function SignInScreen() {
                     tintColor="#ffffff"
                   />
                 </View>
-
-                {/* Row 2: text block pinned to bottom of banner */}
                 <View style={styles.bannerTextBlock}>
                   <Text style={[styles.bannerTitle, { color: T.titleColor }]}>
                     Welcome Back
@@ -264,14 +247,12 @@ export default function SignInScreen() {
                   </Text>
                 </View>
               </View>
-
-              {/* Right column: fading grid */}
               <View style={styles.bannerRight}>
                 <GridOverlay isDark={isDark} />
               </View>
             </View>
 
-            {/* ── Form ───────────────────────────────────────────────── */}
+            {/* ── Form ── */}
             <View style={styles.form}>
               {renderInput(
                 "Email",
@@ -298,7 +279,6 @@ export default function SignInScreen() {
                 },
               )}
 
-              {/* Forgot Password Link */}
               <TouchableOpacity
                 style={styles.forgotPasswordContainer}
                 onPress={() => router.push("/auth/forgot-password" as any)}
@@ -310,7 +290,6 @@ export default function SignInScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {/* ── Button ──────────────────────────────────────────── */}
               <View style={styles.buttonSpacer} />
               <TouchableOpacity
                 style={[
@@ -347,7 +326,6 @@ export default function SignInScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Sign Up link */}
               <View style={styles.signUpContainer}>
                 <Text style={[styles.signUpText, { color: T.signInText }]}>
                   Don't have an account?{" "}
@@ -366,22 +344,10 @@ export default function SignInScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  mainBackground: {
-    flex: 1,
-  },
-  kavWrapper: {
-    flex: 1,
-  },
-  outerScroll: {
-    flexGrow: 1,
-
-    alignItems: "center",
-    paddingVertical: 48,
-  },
-
-  // ── Card ─────────────────────────────────────────────────────────────────
+  mainBackground: { flex: 1 },
+  kavWrapper: { flex: 1 },
+  outerScroll: { flexGrow: 1, alignItems: "center", paddingVertical: 48 },
   card: {
     width: "98%",
     maxWidth: 440,
@@ -393,13 +359,13 @@ const styles = StyleSheet.create({
     shadowRadius: 32,
     elevation: 20,
   },
-
-  // ── Banner ────────────────────────────────────────────────────────────────
+  // ── Banner: no fixed height — uses minHeight + paddingBottom so
+  //    subtitle never gets clipped on large font settings ──────────────
   topBanner: {
     borderRadius: 20,
     margin: 12,
     marginBottom: 0,
-    height: 220, // fixed height — matches signup
+    minHeight: 180, // minimum — expands if text needs more room
     flexDirection: "row",
     overflow: "hidden",
   },
@@ -407,66 +373,37 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 18,
-    justifyContent: "space-between", // pins top row to top, text block to bottom
+    paddingBottom: 20,
+    justifyContent: "space-between",
     zIndex: 2,
   },
-  bannerTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  // Back button absolutely positioned within bannerTopRow so it
-  // doesn't affect the logo's own position — mirrors signup.tsx
-  backAbsolute: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    zIndex: 5,
-  },
+  bannerTopRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  backAbsolute: { position: "absolute", left: 0, top: 0, zIndex: 5 },
   backCircle: {
     width: 34,
     height: 34,
-    borderRadius: 17, // full circle
+    borderRadius: 17,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  logoImage: {
-    width: 220, // matches signup.tsx logo width
-    height: 110, // proportional to banner height
-  },
-  // Text block pushed to bottom via parent's space-between
-  bannerTextBlock: {
-    marginTop: Spacing.sm,
-  },
+  logoImage: { width: 200, height: 80 },
+  bannerTextBlock: { marginTop: Spacing.sm },
   bannerTitle: {
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.xl, // normalize() — scales to device
     fontWeight: "900",
     letterSpacing: 0.2,
-    marginBottom: 5,
-    marginTop: -15,
+    marginBottom: 6,
   },
   bannerSubtitle: {
-    fontSize: 16.5,
-    lineHeight: 18,
-    marginBottom: 30,
+    fontSize: FontSizes.sm, // normalize() — was hardcoded 16.5
+    lineHeight: FontSizes.sm * 1.5, // proportional line height
   },
-  bannerRight: {
-    width: 150,
-    overflow: "hidden",
-  },
-
-  // ── Form ─────────────────────────────────────────────────────────────────
-  form: {
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 36,
-  },
-
+  bannerRight: { width: 130, overflow: "hidden" },
+  form: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 36 },
   inputContainer: { marginBottom: 14 },
   label: {
-    fontSize: 11,
+    fontSize: FontSizes.xs,
     fontWeight: "600",
     marginBottom: 6,
     letterSpacing: 0.5,
@@ -481,21 +418,20 @@ const styles = StyleSheet.create({
     height: 50,
   },
   inputIcon: { marginRight: 8 },
-  input: { flex: 1, fontSize: 14 },
+  input: { flex: 1, fontSize: FontSizes.sm },
   eyeIcon: { padding: 6 },
-  errorText: { fontSize: 11, color: "#ff6b6b", marginTop: 4, marginLeft: 4 },
-
+  errorText: {
+    fontSize: FontSizes.xs,
+    color: "#ff6b6b",
+    marginTop: 4,
+    marginLeft: 4,
+  },
   forgotPasswordContainer: {
     alignItems: "flex-end",
     marginTop: 8,
     marginBottom: 4,
   },
-  forgotPasswordText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  // ── Button ────────────────────────────────────────────────────────────────
+  forgotPasswordText: { fontSize: FontSizes.sm, fontWeight: "600" },
   buttonSpacer: { height: 18 },
   signInButton: {
     borderRadius: BorderRadius.lg,
@@ -510,7 +446,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   buttonDisabled: { opacity: 0.55 },
-  signInButtonText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  signInButtonText: { fontSize: FontSizes.md, fontWeight: "600", flex: 1 },
   arrowCircle: {
     width: 36,
     height: 36,
@@ -518,14 +454,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // ── Footer link ───────────────────────────────────────────────────────────
   signUpContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 20,
   },
-  signUpText: { fontSize: 13 },
-  signUpLink: { fontSize: 13, fontWeight: "700" },
+  signUpText: { fontSize: FontSizes.sm },
+  signUpLink: { fontSize: FontSizes.sm, fontWeight: "700" },
 });
