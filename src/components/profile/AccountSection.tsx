@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   StyleSheet,
   Text,
@@ -15,17 +16,16 @@ import {
 import {
   AuthThemeType,
   BorderRadius,
-  FontSizes
+  Colors,
+  FontSizes,
+  Spacing,
 } from "../../constants/colors";
 import { useAuth } from "../../hooks/useAuth";
-import GridOverlay from "./GridOverlay";
 import MenuItem from "./MenuItem";
 import SectionHeader from "./SectionHeader";
 
 type Router = { push: (path: any) => void };
 type User = { displayName?: string | null; email?: string | null };
-
-// ─── Password stage type ─────────────────────────────────────────────────────
 type PasswordStage = "old" | "new";
 
 export default function AccountSection({
@@ -109,19 +109,6 @@ export default function AccountSection({
     setPasswordLoading(true);
     setPasswordError("");
     try {
-      // We call changePassword with a dummy new password just to verify —
-      // but actually we split the service so we just re-auth here.
-      // Simpler: attempt changePassword with same password to test re-auth,
-      // then on stage "new" do the real update.
-      // Instead: try a test re-auth via changePassword(old, old) — if it passes
-      // we know the password is correct, then move to stage new.
-      // To avoid actually changing password, we expose re-auth separately.
-      // Since we don't have a separate reAuth method, we try changePassword
-      // with the old password as both args — Firebase will reauth fine and
-      // "change" to the same password, which is a no-op effectively.
-      // Then on stage new we call changePassword(old, new).
-      // The cleanest approach: just store oldPassword and move to stage "new".
-      // We validate it for real when the user submits the new password.
       setPasswordStage("new");
     } catch (error: any) {
       setPasswordError("Incorrect password. Please try again.");
@@ -156,7 +143,6 @@ export default function AccountSection({
       resetPasswordModal();
       Alert.alert("Success", "Your password has been updated.");
     } catch (error: any) {
-      // If re-auth fails here it means old password was wrong
       if (
         error.code === "auth/wrong-password" ||
         error.code === "auth/invalid-credential"
@@ -216,6 +202,27 @@ export default function AccountSection({
     </View>
   );
 
+  // ── Shared modal banner ───────────────────────────────────────────────────
+  const ModalBanner = ({
+    title,
+    subtitle,
+  }: {
+    title: string;
+    subtitle: string;
+  }) => (
+    <View style={[styles.modalBanner, { backgroundColor: T.bannerBg }]}>
+      <Image
+        source={require("../../../assets/images/logo.png")}
+        style={styles.modalLogo}
+        resizeMode="contain"
+        // @ts-ignore
+        tintColor="#ffffff"
+      />
+      <Text style={styles.modalBannerTitle}>{title}</Text>
+      <Text style={styles.modalBannerSubtitle}>{subtitle}</Text>
+    </View>
+  );
+
   return (
     <>
       {/* ── Edit Profile Modal ─────────────────────────────────────────── */}
@@ -236,21 +243,9 @@ export default function AccountSection({
               },
             ]}
           >
-            <View style={[styles.modalBanner, { backgroundColor: T.bannerBg }]}>
-              <GridOverlay isDark={isDark} />
-              <View style={styles.modalBannerContent} pointerEvents="none">
-                <Text style={styles.modalEmoji}>✏️</Text>
-              </View>
-            </View>
+            <ModalBanner title="Edit Profile" subtitle="Update your username" />
 
             <View style={styles.modalBody}>
-              <Text style={[styles.modalTitle, { color: T.titleColor }]}>
-                Edit Profile
-              </Text>
-              <Text style={[styles.modalSubtitle, { color: T.subtitleColor }]}>
-                Update your username
-              </Text>
-
               <Text style={[styles.fieldLabel, { color: T.labelColor }]}>
                 USERNAME
               </Text>
@@ -337,26 +332,19 @@ export default function AccountSection({
               },
             ]}
           >
-            <View style={[styles.modalBanner, { backgroundColor: T.bannerBg }]}>
-              <GridOverlay isDark={isDark} />
-              <View style={styles.modalBannerContent} pointerEvents="none">
-                <Text style={styles.modalEmoji}>
-                  {passwordStage === "old" ? "🔐" : "🔑"}
-                </Text>
-              </View>
-            </View>
+            <ModalBanner
+              title={
+                passwordStage === "old" ? "Verify Identity" : "New Password"
+              }
+              subtitle={
+                passwordStage === "old"
+                  ? "Enter your current password to continue"
+                  : "Choose a strong new password"
+              }
+            />
 
             <View style={styles.modalBody}>
-              <Text style={[styles.modalTitle, { color: T.titleColor }]}>
-                {passwordStage === "old" ? "Verify Identity" : "New Password"}
-              </Text>
-              <Text style={[styles.modalSubtitle, { color: T.subtitleColor }]}>
-                {passwordStage === "old"
-                  ? "Enter your current password to continue"
-                  : "Choose a strong new password"}
-              </Text>
-
-              {/* ── Stage: old password ── */}
+              {/* Stage: old password */}
               {passwordStage === "old" && (
                 <>
                   <Text style={[styles.fieldLabel, { color: T.labelColor }]}>
@@ -373,7 +361,7 @@ export default function AccountSection({
                 </>
               )}
 
-              {/* ── Stage: new password ── */}
+              {/* Stage: new password */}
               {passwordStage === "new" && (
                 <>
                   <Text style={[styles.fieldLabel, { color: T.labelColor }]}>
@@ -406,12 +394,10 @@ export default function AccountSection({
                 </>
               )}
 
-              {/* Error */}
               {passwordError !== "" && (
                 <Text style={styles.errorText}>{passwordError}</Text>
               )}
 
-              {/* Actions */}
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={[
@@ -477,10 +463,12 @@ export default function AccountSection({
                 </TouchableOpacity>
               </View>
 
-              {/* Forgot password link */}
               <TouchableOpacity
                 style={styles.forgotButton}
-                onPress={handleForgotPassword}
+                onPress={() => {
+                  resetPasswordModal();
+                  router.push("/auth/forgot-password" as any);
+                }}
               >
                 <Text style={[styles.forgotText, { color: T.signInLink }]}>
                   Forgot your password?
@@ -527,17 +515,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  // ── Modal shared ─────────────────────────────────────────────────────────
+  // ── Modal shared ──────────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.72)",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
   },
   modalCard: {
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 380,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     overflow: "hidden",
@@ -546,34 +534,34 @@ const styles = StyleSheet.create({
     shadowRadius: 32,
     elevation: 24,
   },
+
+  // ── Modal banner — solid colour, logo + title + subtitle, no grid ─────────
   modalBanner: {
-    height: 110,
-    overflow: "hidden",
-  },
-  modalBannerContent: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
+    paddingTop: 24,
+    paddingBottom: 20,
+    paddingHorizontal: Spacing.xl,
     alignItems: "center",
+    gap: 8,
   },
-  modalEmoji: { fontSize: 48 },
-  modalBody: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 28,
-  },
-  modalTitle: {
-    fontSize: FontSizes.xl,
+  modalLogo: { width: 150, height: 60 },
+  modalBannerTitle: {
+    fontSize: FontSizes.lg,
     fontWeight: "900",
+    color: Colors.secondary, // orange — matches forgot-password modal
     letterSpacing: 0.2,
-    marginBottom: 4,
+    textAlign: "center",
   },
-  modalSubtitle: {
+  modalBannerSubtitle: {
     fontSize: FontSizes.sm,
-    fontWeight: "500",
-    marginBottom: 16,
+    color: "rgba(255,255,255,0.65)",
+    lineHeight: FontSizes.sm * 1.5,
+    textAlign: "center",
   },
+
+  // ── Modal body ────────────────────────────────────────────────────────────
+  modalBody: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 28 },
   fieldLabel: {
-    fontSize: 11,
+    fontSize: FontSizes.xs,
     fontWeight: "600",
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -594,11 +582,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 4,
   },
-  modalActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 20,
-  },
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 20 },
   modalButton: {
     borderRadius: BorderRadius.lg,
     paddingVertical: 15,
@@ -611,11 +595,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  modalButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    flex: 1,
-  },
+  modalButtonText: { fontSize: FontSizes.sm, fontWeight: "600", flex: 1 },
   modalArrowCircle: {
     width: 32,
     height: 32,
@@ -631,17 +611,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalButtonSecondaryText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  forgotButton: {
-    alignItems: "center",
-    marginTop: 16,
-    paddingVertical: 4,
-  },
-  forgotText: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-  },
+  modalButtonSecondaryText: { fontSize: FontSizes.sm, fontWeight: "600" },
+  forgotButton: { alignItems: "center", marginTop: 16, paddingVertical: 4 },
+  forgotText: { fontSize: FontSizes.sm, fontWeight: "600" },
 });
