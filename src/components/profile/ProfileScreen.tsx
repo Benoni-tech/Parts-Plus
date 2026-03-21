@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   mainBackground: { flex: 1 },
   sectionsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 93,
+    marginBottom: 153,
   },
 });

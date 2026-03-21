@@ -4,12 +4,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthTheme, Colors } from "../../src/constants/colors";
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
+  const insets = useSafeAreaInsets();
+
+  // ── Tab bar height ────────────────────────────────────────────────────────
+  // insets.bottom = gesture nav bar height (0 on button nav, ~24-34px on gesture nav)
+  // We add that to our base height so the bar always clears the system UI.
+  const TAB_BAR_BASE = Platform.OS === "ios" ? 50 : 54;
+  const TAB_BAR_HEIGHT = TAB_BAR_BASE + insets.bottom;
 
   return (
     <Tabs
@@ -19,6 +27,8 @@ export default function TabsLayout() {
         tabBarStyle: [
           styles.tabBar,
           {
+            height: TAB_BAR_HEIGHT,
+            paddingBottom: insets.bottom, // pushes icons above system nav
             backgroundColor: T.cardBg,
             borderTopColor: T.border,
             shadowColor: isDark ? "#000" : "#00000018",
@@ -77,7 +87,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* ✅ Hide nested routes from tab bar completely — no ghost slots */}
+      {/* Hide nested routes from tab bar — no ghost slots */}
       <Tabs.Screen name="library/[tag]" options={{ href: null }} />
       <Tabs.Screen name="library/playlist/[id]" options={{ href: null }} />
     </Tabs>
@@ -96,14 +106,15 @@ function TabIcon({
   return (
     <View style={styles.tabItem}>
       <Ionicons name={icon} size={24} color={color} />
-      <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+      <Text style={[styles.tabLabel, { color }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: Platform.OS === "ios" ? 80 : 62,
     borderTopWidth: 1,
     paddingTop: 8,
     borderRadius: 0,
@@ -120,10 +131,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
+    minWidth: 60,
   },
   tabLabel: {
     fontSize: 10,
     fontWeight: "600",
     letterSpacing: 0.2,
+    textAlign: "center",
+    includeFontPadding: false,
   },
 });

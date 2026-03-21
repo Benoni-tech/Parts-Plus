@@ -3,45 +3,47 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
-    Animated,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-    AuthTheme,
-    BorderRadius,
-    Colors,
-    FontSizes,
-    Spacing,
+  AuthTheme,
+  BorderRadius,
+  Colors,
+  FontSizes,
+  Spacing,
 } from "../../constants/colors";
 import { usePlayer } from "../../Contexts/PlayerContext";
 
-// TAB_BAR_HEIGHT + safe area — mini player sits just above the tab bar
-const TAB_BAR_HEIGHT = 60;
-const BOTTOM_OFFSET = TAB_BAR_HEIGHT + 8;
+const TAB_BAR_BASE = 54; // matches (tabs)/_layout.tsx base
 
 export default function MiniPlayer() {
   const {
     hymn,
     voicePart,
     isPlaying,
-    isLoading,
     position,
     duration,
     togglePlayPause,
     nextPart,
-    prevPart,
     openFullPlayer,
     availableParts,
+    stop,
   } = usePlayer();
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
+  const insets = useSafeAreaInsets();
+
+  // Sits 8px above the tab bar — accounts for system gesture nav inset
+  const BOTTOM_OFFSET = TAB_BAR_BASE + insets.bottom + 8;
 
   const slideAnim = useRef(new Animated.Value(100)).current;
 
@@ -57,7 +59,6 @@ export default function MiniPlayer() {
   if (!hymn || !voicePart) return null;
 
   const progress = duration > 0 ? position / duration : 0;
-  const canPrev = availableParts.indexOf(voicePart) > 0;
   const canNext = availableParts.indexOf(voicePart) < availableParts.length - 1;
 
   const capitalise = (s: string) =>
@@ -95,6 +96,7 @@ export default function MiniPlayer() {
         onPress={openFullPlayer}
         activeOpacity={0.85}
       >
+        {/* Thumbnail */}
         <Image
           source={{
             uri:
@@ -104,6 +106,7 @@ export default function MiniPlayer() {
           style={styles.thumb}
         />
 
+        {/* Info */}
         <View style={styles.info}>
           <Text
             style={[styles.title, { color: T.textPrimary }]}
@@ -119,18 +122,25 @@ export default function MiniPlayer() {
           </Text>
         </View>
 
+        {/* Controls: Next | Play/Pause | Close */}
         <View style={styles.controls}>
+          {/* Next part */}
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              prevPart();
+              nextPart();
             }}
-            style={[styles.ctrlBtn, !canPrev && { opacity: 0.3 }]}
-            disabled={!canPrev}
+            style={[styles.ctrlBtn, !canNext && { opacity: 0.3 }]}
+            disabled={!canNext}
           >
-            <Ionicons name="play-skip-back" size={18} color={T.textPrimary} />
+            <Ionicons
+              name="play-skip-forward"
+              size={18}
+              color={T.textPrimary}
+            />
           </TouchableOpacity>
 
+          {/* Play / Pause */}
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
@@ -145,19 +155,15 @@ export default function MiniPlayer() {
             />
           </TouchableOpacity>
 
+          {/* Close — stops playback and hides mini player */}
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              nextPart();
+              stop();
             }}
-            style={[styles.ctrlBtn, !canNext && { opacity: 0.3 }]}
-            disabled={!canNext}
+            style={styles.ctrlBtn}
           >
-            <Ionicons
-              name="play-skip-forward"
-              size={18}
-              color={T.textPrimary}
-            />
+            <Ionicons name="close" size={20} color={T.textSecondary} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
