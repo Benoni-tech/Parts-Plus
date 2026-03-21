@@ -261,18 +261,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ── Trending Chorus — list style ─────────────────────────────── */}
+        {/* ── Trending Chorus — playlist detail style ───────────────── */}
         {trendingChorus.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: T.textPrimary }]}>
               Trending Chorus
             </Text>
-            <View
-              style={[
-                styles.listCard,
-                { backgroundColor: T.cardBg, borderColor: T.border },
-              ]}
-            >
+            <View style={styles.listCard}>
               {trendingChorus.map((hymn, index) => (
                 <View key={hymn.id}>
                   <TouchableOpacity
@@ -280,17 +275,12 @@ export default function HomeScreen() {
                     onPress={() => router.push(`/hymn/${hymn.id}` as any)}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.listRank, { color: T.textSecondary }]}>
-                      {String(index + 1).padStart(2, "0")}
-                    </Text>
-                    <Image
-                      source={{
-                        uri:
-                          hymn.coverImage ||
-                          `https://via.placeholder.com/48/${Colors.primary.replace("#", "")}/FFFFFF?text=${hymn.title[0]}`,
-                      }}
-                      style={styles.listThumb}
-                    />
+                    {/* Orange icon wrap */}
+                    <View style={styles.listIconWrap}>
+                      <Ionicons name="musical-notes" size={18} color="#fff" />
+                    </View>
+
+                    {/* Info */}
                     <View style={styles.listInfo}>
                       <Text
                         style={[styles.listTitle, { color: T.textPrimary }]}
@@ -298,14 +288,25 @@ export default function HomeScreen() {
                       >
                         {capitalise(hymn.title)}
                       </Text>
+                      {hymn.composer ? (
+                        <Text
+                          style={[styles.listSub, { color: T.textSecondary }]}
+                          numberOfLines={1}
+                        >
+                          {capitalise(hymn.composer)}
+                        </Text>
+                      ) : null}
                       <Text
-                        style={[styles.listSub, { color: T.textSecondary }]}
-                        numberOfLines={1}
+                        style={[
+                          styles.listAllParts,
+                          { color: T.inputPlaceholder },
+                        ]}
                       >
-                        {capitalise(hymn.composer || "")}
-                        {hymn.plays ? ` · ${hymn.plays} plays` : ""}
+                        All Parts
                       </Text>
                     </View>
+
+                    {/* Play button */}
                     <TouchableOpacity
                       onPress={() => play(hymn, "soprano")}
                       style={[
@@ -320,6 +321,7 @@ export default function HomeScreen() {
                       />
                     </TouchableOpacity>
                   </TouchableOpacity>
+
                   {index < trendingChorus.length - 1 && (
                     <View
                       style={[
@@ -554,27 +556,27 @@ const styles = StyleSheet.create({
   // ── Trending Chorus list ───────────────────────────────────────────────────
   listCard: {
     marginHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
     overflow: "hidden",
   },
   listRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: 12,
-    gap: 12,
+    gap: 14,
   },
-  listRank: {
-    width: 22,
-    fontSize: FontSizes.xs,
-    fontWeight: "800",
-    textAlign: "center",
+  listIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: Colors.secondary,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  listThumb: { width: 46, height: 46, borderRadius: BorderRadius.sm },
   listInfo: { flex: 1 },
   listTitle: { fontSize: FontSizes.sm, fontWeight: "700", marginBottom: 2 },
-  listSub: { fontSize: FontSizes.xs, fontWeight: "500" },
+  listSub: { fontSize: FontSizes.xs, fontWeight: "500", marginBottom: 2 },
+  listAllParts: { fontSize: 10, fontWeight: "500" },
   listPlayBtn: {
     width: 32,
     height: 32,
@@ -582,5 +584,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  listDivider: { height: 1, marginLeft: 16 + 22 + 12 + 46 + 12 },
+  listDivider: { height: 1, marginLeft: Spacing.lg + 42 + 14 },
 });
