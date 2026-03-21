@@ -1,4 +1,4 @@
-// app/(tabs)/library.tsx
+// app/(tabs)/library/index.tsx
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Modal,
   StyleSheet,
   Text,
@@ -16,6 +17,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AuthTheme,
   BorderRadius,
@@ -24,150 +26,158 @@ import {
   Spacing,
 } from "../../../src/constants/colors";
 import { useAuth } from "../../../src/hooks/useAuth";
-import { useHymns } from "../../../src/hooks/useHymns";
 import playlistService, {
   Playlist,
 } from "../../../src/services/playlistService";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 const capitalise = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
-type Tab = "general" | "personal";
+// ─── Grid overlay ─────────────────────────────────────────────────────────────
+function GridOverlay() {
+  const cols = 8;
+  const rows = 5;
+  return (
+    <View style={gridStyles.container} pointerEvents="none">
+      {Array.from({ length: cols }).map((_, i) => {
+        const progress = i / (cols - 1);
+        return (
+          <View
+            key={`v-${i}`}
+            style={[
+              gridStyles.line,
+              gridStyles.vertical,
+              {
+                left: `${progress * 100}%` as any,
+                opacity: progress * 0.3,
+                backgroundColor: "rgba(255,255,255,0.85)",
+              },
+            ]}
+          />
+        );
+      })}
+      {Array.from({ length: rows }).map((_, i) => (
+        <View
+          key={`h-${i}`}
+          style={[
+            gridStyles.line,
+            gridStyles.horizontal,
+            {
+              top: `${(i / (rows - 1)) * 100}%` as any,
+              opacity: 0.1,
+              backgroundColor: "rgba(255,255,255,0.85)",
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
 
-// General tag definitions — label shown on card, value used to filter hymns
-const GENERAL_TAGS: {
-  label: string;
-  value: string;
-  letter: string;
-  colorIndex: number;
-}[] = [
-  {
-    label: "Church Service",
-    value: "church service",
-    letter: "C",
-    colorIndex: 0,
-  },
-  { label: "Wedding", value: "wedding", letter: "W", colorIndex: 1 },
-  { label: "Funeral", value: "funeral", letter: "F", colorIndex: 2 },
-  { label: "Trending", value: "trending", letter: "T", colorIndex: 3 },
-  { label: "Nostalgic", value: "nostalgic", letter: "N", colorIndex: 4 },
-  { label: "Worship", value: "worship", letter: "W", colorIndex: 5 },
-  { label: "Praise", value: "praise", letter: "P", colorIndex: 6 },
-  { label: "Easter", value: "easter", letter: "E", colorIndex: 7 },
-];
+const gridStyles = StyleSheet.create({
+  container: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+  line: { position: "absolute" },
+  vertical: { top: 0, bottom: 0, width: 1 },
+  horizontal: { left: 0, right: 0, height: 1 },
+});
 
-// Fixed rotating colour palette — same order every time
-const CARD_COLORS = [
-  "#7C3AED", // purple
-  "#059669", // green
-  "#DC2626", // red
-  "#D97706", // amber
-  "#2563EB", // blue
-  "#DB2777", // pink
-  "#0891B2", // cyan
-  "#65A30D", // lime
-];
-
-// ─── Small card component ──────────────────────────────────────────────────────
-function GridCard({
-  letter,
-  label,
-  subtitle,
-  colorIndex,
+// ─── Playlist row ─────────────────────────────────────────────────────────────
+function PlaylistRow({
+  playlist,
+  index,
   onPress,
-  onMore,
+  onDelete,
+  T,
+  isDark,
+  isLast,
 }: {
-  letter: string;
-  label: string;
-  subtitle: string;
-  colorIndex: number;
+  playlist: Playlist;
+  index: number;
   onPress: () => void;
-  onMore?: () => void;
+  onDelete: () => void;
+  T: any;
+  isDark: boolean;
+  isLast: boolean;
 }) {
-  const bg = CARD_COLORS[colorIndex % CARD_COLORS.length];
+  const dotColor = index % 2 === 0 ? Colors.primary : Colors.secondary;
+
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: bg }]}
+      style={[
+        styles.playlistRow,
+        { borderBottomColor: T.border },
+        !isLast && { borderBottomWidth: 1 },
+      ]}
       onPress={onPress}
-      activeOpacity={0.82}
+      activeOpacity={0.75}
     >
-      {/* Top row */}
-      <View style={styles.cardTopRow}>
-        <View style={styles.cardAvatar}>
-          <Text style={styles.cardAvatarLetter}>{letter.toUpperCase()}</Text>
-        </View>
-        {onMore ? (
-          <TouchableOpacity
-            onPress={onMore}
-            style={styles.cardMoreBtn}
-            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-          >
-            <Ionicons
-              name="ellipsis-horizontal"
-              size={16}
-              color="rgba(255,255,255,0.8)"
-            />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.cardMoreBtn} />
-        )}
+      {/* Colour dot */}
+      <View style={[styles.playlistDot, { backgroundColor: dotColor }]}>
+        <Ionicons name="musical-notes" size={16} color="#fff" />
       </View>
-      {/* Bottom info */}
-      <View style={styles.cardBottom}>
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {label}
+
+      {/* Info */}
+      <View style={styles.playlistInfo}>
+        <Text
+          style={[styles.playlistName, { color: T.textPrimary }]}
+          numberOfLines={1}
+        >
+          {capitalise(playlist.name)}
         </Text>
-        <Text style={styles.cardSubtitle} numberOfLines={1}>
-          {subtitle}
+        <Text style={[styles.playlistCount, { color: T.textSecondary }]}>
+          {playlist.hymnIds.length} hymn
+          {playlist.hymnIds.length !== 1 ? "s" : ""}
         </Text>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.rowActions}>
+        <TouchableOpacity
+          onPress={onDelete}
+          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          style={styles.deleteBtn}
+        >
+          <Ionicons name="trash-outline" size={17} color={T.textSecondary} />
+        </TouchableOpacity>
+        <Ionicons name="chevron-forward" size={18} color={T.textSecondary} />
       </View>
     </TouchableOpacity>
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
-export default function LibraryScreen() {
+// ─── Screen ───────────────────────────────────────────────────────────────────
+export default function PlaylistScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
+  const insets = useSafeAreaInsets();
 
-  const [activeTab, setActiveTab] = useState<Tab>("general");
+  // First part of username — "Kojo Mensah" → "Kojo"
+  const firstName = userData?.username ? userData.username.split(" ")[0] : null;
+  const bannerTitle = firstName ? `${firstName}'s Playlists` : "My Playlists";
+
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [playlistsLoading, setPlaylistsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // Load all hymns to get counts per tag
-  const { hymns } = useHymns({});
-
-  // Subscribe to personal playlists
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = playlistService.subscribeToPlaylists(user.uid, (data) => {
-      setPlaylists(data);
-      setPlaylistsLoading(false);
-    });
+    const unsub = playlistService.subscribeToPlaylists(
+      user.uid,
+      (data) => {
+        setPlaylists(data);
+        setLoading(false);
+      },
+      () => setLoading(false),
+    );
     return () => unsub();
   }, [user?.uid]);
 
-  // Count hymns matching a tag — checks both tags[] array and category string
-  const countForTag = (tagValue: string) => {
-    return hymns.filter((h) => {
-      const inTags = Array.isArray(h.tags)
-        ? h.tags.some((t: string) => t.toLowerCase() === tagValue.toLowerCase())
-        : false;
-      const inCategory =
-        typeof h.category === "string" &&
-        h.category.toLowerCase() === tagValue.toLowerCase();
-      return inTags || inCategory;
-    }).length;
-  };
-
-  const handleCreatePlaylist = async () => {
+  const handleCreate = async () => {
     if (!newPlaylistName.trim()) {
       Alert.alert("Error", "Please enter a playlist name.");
       return;
@@ -189,7 +199,7 @@ export default function LibraryScreen() {
     }
   };
 
-  const handleDeletePlaylist = (playlist: Playlist) => {
+  const handleDelete = (playlist: Playlist) => {
     Alert.alert(
       "Delete Playlist",
       `Delete "${playlist.name}"? This cannot be undone.`,
@@ -204,146 +214,105 @@ export default function LibraryScreen() {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: T.background }]}>
-      <StatusBar style={T.statusBar as any} />
+      <StatusBar style="light" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.heading, { color: T.textPrimary }]}>
-          Your Library
-        </Text>
-        <TouchableOpacity style={styles.searchBtn}>
-          <Ionicons name="search-outline" size={22} color={T.textPrimary} />
-        </TouchableOpacity>
+      {/* ── Banner ───────────────────────────────────────────────────── */}
+      <View
+        style={[
+          styles.banner,
+          { backgroundColor: Colors.primary, paddingTop: insets.top + 16 },
+        ]}
+      >
+        <GridOverlay />
+        <View style={styles.bannerInner}>
+          <Image
+            source={require("../../../assets/images/logo.png")}
+            style={styles.bannerLogo}
+            resizeMode="contain"
+            // @ts-ignore
+            tintColor="#ffffff"
+          />
+          <Text style={styles.bannerTitle}>{bannerTitle}</Text>
+          <Text style={styles.bannerSubtitle}>
+            {playlists.length > 0
+              ? `${playlists.length} playlist${playlists.length !== 1 ? "s" : ""}`
+              : "Create your first playlist"}
+          </Text>
+          <TouchableOpacity
+            style={[styles.bannerAddBtn, { backgroundColor: Colors.secondary }]}
+            onPress={() => setShowCreateModal(true)}
+          >
+            <Ionicons name="add" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Tab switcher */}
-      <View style={[styles.tabRow, { borderBottomColor: T.border }]}>
-        {(["general", "personal"] as Tab[]).map((tab) => {
-          const active = activeTab === tab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={styles.tabBtn}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  {
-                    color: active ? Colors.secondary : T.textSecondary,
-                    fontWeight: active ? "700" : "500",
-                  },
-                ]}
-              >
-                {capitalise(tab)}
-              </Text>
-              {active && (
-                <View
-                  style={[
-                    styles.tabIndicator,
-                    { backgroundColor: Colors.secondary },
-                  ]}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* ── GENERAL TAB ── */}
-      {activeTab === "general" && (
+      {/* ── List ─────────────────────────────────────────────────────── */}
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={Colors.secondary} />
+        </View>
+      ) : playlists.length === 0 ? (
+        <View style={styles.centered}>
+          <View
+            style={[
+              styles.emptyIcon,
+              { backgroundColor: Colors.primary + "14" },
+            ]}
+          >
+            <Ionicons
+              name="musical-notes-outline"
+              size={40}
+              color={Colors.primary}
+            />
+          </View>
+          <Text style={[styles.emptyTitle, { color: T.textPrimary }]}>
+            No playlists yet
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: T.textSecondary }]}>
+            Create your first playlist and add hymns to it
+          </Text>
+          <TouchableOpacity
+            style={[styles.emptyBtn, { backgroundColor: Colors.secondary }]}
+            onPress={() => setShowCreateModal(true)}
+          >
+            <Ionicons
+              name="add"
+              size={18}
+              color="#fff"
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.emptyBtnText}>New Playlist</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
         <FlatList
-          data={GENERAL_TAGS}
-          keyExtractor={(item) => item.value}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={styles.gridContent}
+          data={playlists}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: insets.bottom + 140 },
+          ]}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const count = countForTag(item.value);
-            return (
-              <GridCard
-                letter={item.letter}
-                label={item.label}
-                subtitle={`${count} hymn${count !== 1 ? "s" : ""} · All Parts`}
-                colorIndex={item.colorIndex}
-                onPress={() =>
-                  router.push(
-                    `/(tabs)/library/${encodeURIComponent(item.value)}` as any,
-                  )
-                }
-              />
-            );
-          }}
+          renderItem={({ item, index }) => (
+            <PlaylistRow
+              playlist={item}
+              index={index}
+              isLast={index === playlists.length - 1}
+              T={T}
+              isDark={isDark}
+              onPress={() =>
+                router.push(`/(tabs)/library/playlist/${item.id}` as any)
+              }
+              onDelete={() => handleDelete(item)}
+            />
+          )}
         />
       )}
 
-      {/* ── PERSONAL TAB ── */}
-      {activeTab === "personal" && (
-        <>
-          {playlistsLoading ? (
-            <View style={styles.centered}>
-              <ActivityIndicator color={Colors.secondary} />
-            </View>
-          ) : playlists.length === 0 ? (
-            <View style={styles.centered}>
-              <Ionicons
-                name="musical-notes-outline"
-                size={52}
-                color={T.textSecondary}
-              />
-              <Text style={[styles.emptyTitle, { color: T.textPrimary }]}>
-                No playlists yet
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: T.textSecondary }]}>
-                Create your first playlist and add hymns to it
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={playlists}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.gridRow}
-              contentContainerStyle={styles.gridContent}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item, index }) => (
-                <GridCard
-                  letter={item.name.charAt(0)}
-                  label={item.name}
-                  subtitle={`${item.hymnIds.length} hymn${item.hymnIds.length !== 1 ? "s" : ""} · All Parts`}
-                  colorIndex={index}
-                  onPress={() =>
-                    router.push(`/(tabs)/library/playlist/${item.id}` as any)
-                  }
-                  onMore={() => handleDeletePlaylist(item)}
-                />
-              )}
-            />
-          )}
-
-          {/* Add playlist button */}
-          <TouchableOpacity
-            style={[styles.addBtn, { borderColor: T.border }]}
-            onPress={() => setShowCreateModal(true)}
-            activeOpacity={0.75}
-          >
-            <Ionicons
-              name="add-circle-outline"
-              size={22}
-              color={Colors.secondary}
-            />
-            <Text style={[styles.addBtnText, { color: Colors.secondary }]}>
-              Add Playlist
-            </Text>
-          </TouchableOpacity>
-        </>
-      )}
-
-      {/* ── Create playlist modal ── */}
+      {/* ── Create modal ──────────────────────────────────────────────── */}
       <Modal
         visible={showCreateModal}
         transparent
@@ -354,74 +323,124 @@ export default function LibraryScreen() {
           <View
             style={[
               styles.modalCard,
-              { backgroundColor: T.cardBg, borderColor: T.cardBorder },
+              {
+                backgroundColor: T.cardBg,
+                borderColor: T.cardBorder,
+                shadowColor: T.shadow,
+              },
             ]}
           >
-            <Text style={[styles.modalTitle, { color: T.titleColor }]}>
-              New Playlist
-            </Text>
-            <Text style={[styles.modalSubtitle, { color: T.subtitleColor }]}>
-              Give your playlist a name
-            </Text>
-
+            {/* Banner — solid navy + grid + logo */}
             <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: T.inputBg, borderColor: T.inputBorder },
-              ]}
+              style={[styles.modalBanner, { backgroundColor: Colors.primary }]}
             >
-              <TextInput
-                style={[styles.input, { color: T.inputText }]}
-                placeholder="e.g. Sunday Morning"
-                placeholderTextColor={T.inputPlaceholder}
-                value={newPlaylistName}
-                onChangeText={setNewPlaylistName}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={handleCreatePlaylist}
-              />
+              <GridOverlay />
+              <View style={styles.modalBannerInner} pointerEvents="none">
+                <Image
+                  source={require("../../../assets/images/logo.png")}
+                  style={styles.modalLogo}
+                  resizeMode="contain"
+                  // @ts-ignore
+                  tintColor="#ffffff"
+                />
+                <Text style={styles.modalBannerTitle}>New Playlist</Text>
+                <Text style={styles.modalBannerSubtitle}>
+                  Give your playlist a name
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
+            {/* Body */}
+            <View style={styles.modalBody}>
+              <Text style={[styles.fieldLabel, { color: T.labelColor }]}>
+                PLAYLIST NAME
+              </Text>
+              <View
                 style={[
-                  styles.modalBtnSecondary,
-                  { borderColor: T.inputBorder },
+                  styles.inputWrapper,
+                  { backgroundColor: T.inputBg, borderColor: T.inputBorder },
                 ]}
-                onPress={() => {
-                  setShowCreateModal(false);
-                  setNewPlaylistName("");
-                }}
               >
-                <Text
-                  style={[
-                    styles.modalBtnSecondaryText,
-                    { color: T.labelColor },
-                  ]}
-                >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+                <Ionicons
+                  name="musical-notes-outline"
+                  size={18}
+                  color={T.inputIcon}
+                  style={{ marginRight: 8 }}
+                />
+                <TextInput
+                  style={[styles.input, { color: T.inputText }]}
+                  placeholder="e.g. Sunday Morning"
+                  placeholderTextColor={T.inputPlaceholder}
+                  value={newPlaylistName}
+                  onChangeText={setNewPlaylistName}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleCreate}
+                />
+              </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.modalBtnPrimary,
-                  { backgroundColor: T.btnBg, shadowColor: T.shadow },
-                  creating && { opacity: 0.6 },
-                ]}
-                onPress={handleCreatePlaylist}
-                disabled={creating}
-              >
-                {creating ? (
-                  <ActivityIndicator color={T.btnText} />
-                ) : (
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[
+                    styles.modalBtnSecondary,
+                    { borderColor: T.inputBorder },
+                  ]}
+                  onPress={() => {
+                    setShowCreateModal(false);
+                    setNewPlaylistName("");
+                  }}
+                >
                   <Text
-                    style={[styles.modalBtnPrimaryText, { color: T.btnText }]}
+                    style={[
+                      styles.modalBtnSecondaryText,
+                      { color: T.labelColor },
+                    ]}
                   >
-                    Create
+                    Cancel
                   </Text>
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.modalBtnPrimary,
+                    {
+                      backgroundColor: T.btnBg,
+                      shadowColor: T.shadow,
+                      flex: 1,
+                    },
+                    creating && { opacity: 0.6 },
+                  ]}
+                  onPress={handleCreate}
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <ActivityIndicator color={T.btnText} style={{ flex: 1 }} />
+                  ) : (
+                    <>
+                      <Text
+                        style={[
+                          styles.modalBtnPrimaryText,
+                          { color: T.btnText },
+                        ]}
+                      >
+                        Create
+                      </Text>
+                      <View
+                        style={[
+                          styles.arrowCircle,
+                          { backgroundColor: T.btnArrowBg },
+                        ]}
+                      >
+                        <Ionicons
+                          name="arrow-forward"
+                          size={16}
+                          color={T.btnArrow}
+                        />
+                      </View>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -436,177 +455,79 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     paddingHorizontal: 40,
   },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 60,
+  // ── Banner ────────────────────────────────────────────────────────────────
+  banner: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 12,
+    paddingBottom: 32,
+    overflow: "hidden",
   },
-  heading: { fontSize: FontSizes.xxl, fontWeight: "800" },
-  searchBtn: {
-    width: 38,
-    height: 38,
-    justifyContent: "center",
+  bannerInner: {
     alignItems: "center",
+    gap: 6,
+    zIndex: 2,
   },
-
-  // ── Tabs ──────────────────────────────────────────────────────────────────
-  tabRow: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.lg,
-    borderBottomWidth: 1,
-    marginBottom: Spacing.lg,
-  },
-  tabBtn: {
-    marginRight: Spacing.xl,
-    paddingBottom: 10,
-    position: "relative",
-  },
-  tabLabel: { fontSize: FontSizes.md },
-  tabIndicator: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    borderRadius: 1,
-  },
-
-  // ── Grid ──────────────────────────────────────────────────────────────────
-  gridContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 180,
-    gap: 12,
-  },
-  gridRow: { gap: 12 },
-
-  // ── Card ──────────────────────────────────────────────────────────────────
-  card: {
-    flex: 1,
-    borderRadius: BorderRadius.lg,
-    padding: 14,
-    aspectRatio: 1,
-    justifyContent: "space-between",
-  },
-  cardTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  cardAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardAvatarLetter: {
-    fontSize: FontSizes.md,
-    fontWeight: "800",
-    color: "#ffffff",
-  },
-  cardMoreBtn: {
-    width: 28,
-    height: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardBottom: { gap: 2 },
-  cardTitle: {
-    fontSize: FontSizes.sm,
-    fontWeight: "800",
-    color: "#ffffff",
-    lineHeight: 20,
-  },
-  cardSubtitle: {
-    fontSize: FontSizes.xs,
-    fontWeight: "500",
-    color: "rgba(255,255,255,0.75)",
-  },
-
-  // ── Add playlist button ────────────────────────────────────────────────────
-  addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginHorizontal: Spacing.lg,
-    marginBottom: 160,
-    paddingVertical: 14,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-  },
-  addBtnText: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-  },
-
-  // ── Create modal ──────────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.72)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 28,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 360,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    padding: 24,
-  },
-  modalTitle: {
+  bannerLogo: { width: 120, height: 52, marginBottom: 4 },
+  bannerText: {},
+  bannerTitle: {
     fontSize: FontSizes.xl,
     fontWeight: "900",
-    marginBottom: 4,
+    color: Colors.secondary,
+    letterSpacing: 0.2,
+    textAlign: "center",
   },
-  modalSubtitle: {
-    fontSize: FontSizes.sm,
-    marginBottom: 20,
+  bannerSubtitle: {
+    fontSize: FontSizes.xs,
+    color: "rgba(255,255,255,0.65)",
+    marginTop: 4,
+    textAlign: "center",
   },
-  inputWrapper: {
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    height: 50,
-    marginBottom: 20,
+  bannerAddBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
+    alignItems: "center",
+    marginTop: 8,
   },
-  input: { fontSize: FontSizes.sm },
-  modalActions: { flexDirection: "row", gap: 10 },
-  modalBtnSecondary: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: BorderRadius.lg,
+
+  // ── List ──────────────────────────────────────────────────────────────────
+  listContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg },
+  playlistRow: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
+    gap: 14,
+  },
+  playlistDot: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
-  modalBtnSecondaryText: { fontSize: FontSizes.sm, fontWeight: "600" },
-  modalBtnPrimary: {
-    flex: 1,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: 14,
+  playlistInfo: { flex: 1 },
+  playlistName: { fontSize: FontSizes.md, fontWeight: "700", marginBottom: 3 },
+  playlistCount: { fontSize: FontSizes.xs, fontWeight: "500" },
+  rowActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  deleteBtn: {
+    width: 32,
+    height: 32,
     justifyContent: "center",
     alignItems: "center",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
   },
-  modalBtnPrimaryText: { fontSize: FontSizes.sm, fontWeight: "700" },
 
   // ── Empty state ───────────────────────────────────────────────────────────
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   emptyTitle: {
     fontSize: FontSizes.md,
     fontWeight: "700",
@@ -616,5 +537,103 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     textAlign: "center",
     lineHeight: 22,
+  },
+  emptyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.lg,
+    marginTop: 6,
+  },
+  emptyBtnText: { color: "#fff", fontSize: FontSizes.sm, fontWeight: "700" },
+
+  // ── Create modal ──────────────────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.72)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
+    elevation: 24,
+  },
+  modalBanner: {
+    height: 140,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBannerInner: {
+    alignItems: "center",
+    gap: 6,
+    zIndex: 2,
+  },
+  modalLogo: { width: 130, height: 52 },
+  modalBannerTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "900",
+    color: Colors.secondary,
+    letterSpacing: 0.2,
+  },
+  modalBannerSubtitle: {
+    fontSize: FontSizes.xs,
+    color: "rgba(255,255,255,0.65)",
+  },
+  modalBody: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 28 },
+  fieldLabel: {
+    fontSize: FontSizes.xs,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    height: 50,
+    marginBottom: 20,
+  },
+  input: { flex: 1, fontSize: FontSizes.sm },
+  modalActions: { flexDirection: "row", gap: 10 },
+  modalBtnSecondary: {
+    borderWidth: 1.5,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBtnSecondaryText: { fontSize: FontSizes.sm, fontWeight: "600" },
+  modalBtnPrimary: {
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  modalBtnPrimaryText: { fontSize: FontSizes.sm, fontWeight: "700", flex: 1 },
+  arrowCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

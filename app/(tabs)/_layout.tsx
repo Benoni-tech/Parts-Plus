@@ -68,7 +68,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               icon={focused ? "albums" : "albums-outline"}
-              label="Library"
+              label="Playlist"
               color={color}
             />
           ),
