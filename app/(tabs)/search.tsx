@@ -1,9 +1,16 @@
 // app/(tabs)/search.tsx
 
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -28,7 +35,9 @@ import { useHymns } from "../../src/hooks/useHymns";
 const capitalise = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
-// ─── Filter chips ─────────────────────────────────────────────────────────────
+const RECENT_KEY = "@parts_plus_recent_searches";
+const MAX_RECENT = 6;
+
 const FILTERS = [
   { id: "all", label: "All" },
   { id: "hymns", label: "Hymns" },
@@ -39,8 +48,6 @@ const FILTERS = [
   { id: "tenor", label: "Tenor" },
   { id: "bass", label: "Bass" },
 ];
-
-const MAX_RECENT = 6;
 
 export default function SearchScreen() {
   const colorScheme = useColorScheme();
@@ -55,6 +62,22 @@ export default function SearchScreen() {
   const [isFocused, setIsFocused] = useState(false);
 
   const { hymns, loading } = useHymns({});
+
+  // ── Load persisted recents on mount ───────────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(RECENT_KEY)
+      .then((raw) => {
+        if (raw) setRecentSearches(JSON.parse(raw));
+      })
+      .catch(() => {}); // silently ignore read errors
+  }, []);
+
+  // ── Persist recents whenever they change ──────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.setItem(RECENT_KEY, JSON.stringify(recentSearches)).catch(
+      () => {},
+    );
+  }, [recentSearches]);
 
   // ── Filtered results ───────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -93,7 +116,7 @@ export default function SearchScreen() {
   const otherResults = filtered.slice(1);
   const isTyping = query.trim().length > 0;
 
-  // ── Recent searches ────────────────────────────────────────────────────────
+  // ── Recent search helpers ──────────────────────────────────────────────────
   const addToRecent = useCallback((term: string) => {
     if (!term.trim()) return;
     setRecentSearches((prev) => {
@@ -102,29 +125,26 @@ export default function SearchScreen() {
     });
   }, []);
 
-  const removeRecent = (term: string) => {
+  const removeRecent = (term: string) =>
     setRecentSearches((p) => p.filter((r) => r !== term));
-  };
 
-  // Save to recent AND clear the input
+  const clearAllRecent = () => setRecentSearches([]);
+
   const handleClearInput = () => {
     if (query.trim()) addToRecent(query.trim());
     setQuery("");
   };
 
-  // Tap a result → save term, navigate
   const handleResultPress = (item: any) => {
     addToRecent(query.trim());
     router.push(`/hymn/${item.id}`);
   };
 
-  // Tap a recent chip → restore it into the search bar
   const handleRecentTap = (term: string) => {
     setQuery(term);
     inputRef.current?.focus();
   };
 
-  // Blur → save whatever was typed so recents always populate
   const handleBlur = () => {
     setIsFocused(false);
     if (query.trim()) addToRecent(query.trim());
@@ -166,8 +186,6 @@ export default function SearchScreen() {
             .filter(Boolean)
             .join(" · ")}
         </Text>
-
-        {/* Badge row */}
         <View style={styles.badgeRow}>
           {item.voiceParts && Object.keys(item.voiceParts).length > 0 && (
             <View
@@ -188,7 +206,6 @@ export default function SearchScreen() {
     </TouchableOpacity>
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: T.background }]}>
       <StatusBar style={T.statusBar as any} />
@@ -240,7 +257,7 @@ export default function SearchScreen() {
         )}
       </View>
 
-      {/* Horizontal filter chips */}
+      {/* Filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -279,15 +296,13 @@ export default function SearchScreen() {
         })}
       </ScrollView>
 
-      {/* ── Body states ── */}
+      {/* Body */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator color={Colors.secondary} />
         </View>
       ) : !isTyping ? (
-        /* Idle — show recent searches if any, else true empty state */
         recentSearches.length === 0 ? (
-          /* No history — original empty state */
           <View style={styles.centered}>
             <Ionicons
               name="musical-notes-outline"
@@ -299,19 +314,17 @@ export default function SearchScreen() {
             </Text>
           </View>
         ) : (
-          /* Has history — pill list */
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Section header */}
             <View style={styles.recentHeader}>
               <Text style={[styles.recentHeading, { color: T.textPrimary }]}>
                 Recent Searches
               </Text>
               <TouchableOpacity
-                onPress={() => setRecentSearches([])}
+                onPress={clearAllRecent}
                 hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
               >
                 <Text style={[styles.clearAll, { color: T.textSecondary }]}>
@@ -319,8 +332,6 @@ export default function SearchScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Grouped card */}
             <View
               style={[
                 styles.recentList,
@@ -334,7 +345,6 @@ export default function SearchScreen() {
                     onPress={() => handleRecentTap(item)}
                     activeOpacity={0.72}
                   >
-                    {/* Circle search icon */}
                     <View
                       style={[
                         styles.recentIconWrap,
@@ -351,16 +361,12 @@ export default function SearchScreen() {
                         color={T.textSecondary}
                       />
                     </View>
-
-                    {/* Term */}
                     <Text
                       style={[styles.recentText, { color: T.textPrimary }]}
                       numberOfLines={1}
                     >
                       {item}
                     </Text>
-
-                    {/* Dismiss button */}
                     <TouchableOpacity
                       onPress={() => removeRecent(item)}
                       hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
@@ -380,8 +386,6 @@ export default function SearchScreen() {
                       />
                     </TouchableOpacity>
                   </TouchableOpacity>
-
-                  {/* Divider — skip after last row */}
                   {index < recentSearches.length - 1 && (
                     <View
                       style={[
@@ -396,7 +400,6 @@ export default function SearchScreen() {
           </ScrollView>
         )
       ) : filtered.length === 0 ? (
-        /* No results */
         <View style={styles.centered}>
           <Ionicons name="search-outline" size={48} color={T.textSecondary} />
           <Text style={[styles.emptyText, { color: T.textSecondary }]}>
@@ -404,7 +407,6 @@ export default function SearchScreen() {
           </Text>
         </View>
       ) : (
-        /* Results — top card + list */
         <FlatList
           data={otherResults}
           keyExtractor={(item) => item.id ?? item.title}
@@ -491,15 +493,8 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 40,
   },
-
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 12,
-  },
+  header: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: 12 },
   heading: { fontSize: FontSizes.xxl, fontWeight: "800" },
-
-  // ── Search bar ────────────────────────────────────────────────────────────
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -511,8 +506,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   searchInput: { flex: 1, fontSize: FontSizes.sm },
-
-  // ── Filter chips ──────────────────────────────────────────────────────────
   chipsRow: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: 14,
@@ -527,22 +520,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   chipText: { fontSize: FontSizes.xs, fontWeight: "600" },
-
-  // ── Section ───────────────────────────────────────────────────────────────
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
   sectionTitle: {
     fontSize: FontSizes.sm,
     fontWeight: "800",
     letterSpacing: 0.3,
     marginBottom: 14,
   },
-
-  // ── Top result card ────────────────────────────────────────────────────────
   topCard: {
     flexDirection: "row",
     borderRadius: BorderRadius.lg,
@@ -551,11 +534,7 @@ const styles = StyleSheet.create({
     gap: 14,
     alignItems: "flex-start",
   },
-  topCardImage: {
-    width: 90,
-    height: 90,
-    borderRadius: BorderRadius.md,
-  },
+  topCardImage: { width: 90, height: 90, borderRadius: BorderRadius.md },
   topCardMeta: { flex: 1, paddingTop: 2 },
   topCardTitle: {
     fontSize: FontSizes.lg,
@@ -565,14 +544,8 @@ const styles = StyleSheet.create({
   },
   topCardSub: { fontSize: FontSizes.sm, fontWeight: "500", marginBottom: 10 },
   badgeRow: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   badgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
-
-  // ── Results list ──────────────────────────────────────────────────────────
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: 180,
@@ -588,8 +561,6 @@ const styles = StyleSheet.create({
   resultThumb: { width: 50, height: 50, borderRadius: BorderRadius.sm },
   resultTitle: { fontSize: FontSizes.sm, fontWeight: "700", marginBottom: 2 },
   resultSub: { fontSize: FontSizes.xs, fontWeight: "500" },
-
-  // ── Recent searches ────────────────────────────────────────────────────────
   recentHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -621,11 +592,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  recentText: {
-    fontSize: FontSizes.sm,
-    fontWeight: "500",
-    flex: 1,
-  },
+  recentText: { fontSize: FontSizes.sm, fontWeight: "500", flex: 1 },
   recentDismiss: {
     width: 26,
     height: 26,
@@ -633,11 +600,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  recentDivider: {
-    height: 1,
-    marginLeft: 56,
-  },
-
-  // ── Empty ─────────────────────────────────────────────────────────────────
+  recentDivider: { height: 1, marginLeft: 56 },
   emptyText: { fontSize: FontSizes.sm, textAlign: "center", lineHeight: 22 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
 });
