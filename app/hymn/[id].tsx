@@ -142,21 +142,13 @@ export default function HymnDetailScreen() {
           ) : null}
         </View>
 
-        {/* ── Voice parts ───────────────────────────────────────────────── */}
+        {/* ── Voice parts — playlist list style ─────────────────────────── */}
         <View style={styles.partsSection}>
           <Text style={[styles.partsHeading, { color: T.textSecondary }]}>
             SELECT A PART
           </Text>
 
-          <View
-            style={[
-              styles.partsCard,
-              { backgroundColor: T.cardBg, borderColor: T.border },
-            ]}
-          >
-            {/* Timeline line */}
-            <View style={[styles.timeline, { backgroundColor: T.border }]} />
-
+          <View style={[styles.partsCard, { borderColor: T.border }]}>
             {VOICE_PARTS.map((vp, index) => {
               const isSelected = isThisHymnActive && activePart === vp.part;
               const hasAudio = !!hymn.voiceParts?.[vp.part];
@@ -165,94 +157,67 @@ export default function HymnDetailScreen() {
               return (
                 <View key={vp.part}>
                   <TouchableOpacity
-                    style={styles.voiceRow}
+                    style={[
+                      styles.voiceRow,
+                      isSelected && { backgroundColor: "rgba(255,163,3,0.08)" },
+                      !hasAudio && { opacity: 0.5 },
+                    ]}
                     onPress={() => {
                       if (hasAudio) play(hymn, vp.part);
                     }}
                     activeOpacity={hasAudio ? 0.75 : 1}
                   >
-                    {/* Timeline dot */}
-                    <View
-                      style={[
-                        styles.timelineDot,
-                        {
-                          backgroundColor: isSelected
-                            ? Colors.secondary
-                            : T.background,
-                          borderColor: isSelected ? Colors.secondary : T.border,
-                        },
-                      ]}
-                    />
+                    {/* Uniform orange background, white icon */}
+                    <View style={styles.voiceIconWrap}>
+                      <Ionicons
+                        name="musical-notes"
+                        size={18}
+                        color="#ffffff"
+                      />
+                    </View>
 
-                    {/* Row content */}
-                    <View style={styles.voiceContent}>
-                      <View
-                        style={[
-                          styles.voiceIconWrap,
-                          {
-                            backgroundColor: isSelected
-                              ? "rgba(255,163,3,0.12)"
-                              : isDark
-                                ? "rgba(255,255,255,0.06)"
-                                : "rgba(0,0,0,0.05)",
-                          },
-                        ]}
+                    {/* Part name + now playing tag */}
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.voiceName, { color: T.textPrimary }]}
                       >
-                        <Ionicons
-                          name={
-                            isSelected
-                              ? "musical-note"
-                              : "musical-notes-outline"
-                          }
-                          size={18}
-                          color={isSelected ? Colors.secondary : T.inputIcon}
-                        />
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[styles.voiceName, { color: T.textPrimary }]}
-                        >
-                          {vp.name}
-                        </Text>
-                        {isSelected && (
-                          <Text
-                            style={[
-                              styles.nowPlayingTag,
-                              { color: Colors.secondary },
-                            ]}
-                          >
-                            Now playing
-                          </Text>
-                        )}
-                      </View>
-
-                      {isSelected ? (
-                        <View
-                          style={[
-                            styles.activePill,
-                            { backgroundColor: Colors.secondary },
-                          ]}
-                        >
-                          <Ionicons name="volume-high" size={13} color="#fff" />
-                        </View>
-                      ) : hasAudio ? (
-                        <View
-                          style={[styles.playPill, { borderColor: T.border }]}
-                        >
-                          <Ionicons name="play" size={13} color={T.inputIcon} />
-                        </View>
-                      ) : (
+                        {vp.name}
+                      </Text>
+                      {isSelected && (
                         <Text
                           style={[
-                            styles.soonText,
-                            { color: T.inputPlaceholder },
+                            styles.nowPlayingTag,
+                            { color: Colors.secondary },
                           ]}
                         >
-                          Soon
+                          Now playing
                         </Text>
                       )}
                     </View>
+
+                    {/* Right indicator */}
+                    {isSelected ? (
+                      <View
+                        style={[
+                          styles.activePill,
+                          { backgroundColor: Colors.secondary },
+                        ]}
+                      >
+                        <Ionicons name="volume-high" size={13} color="#fff" />
+                      </View>
+                    ) : hasAudio ? (
+                      <View
+                        style={[styles.playPill, { borderColor: T.border }]}
+                      >
+                        <Ionicons name="play" size={13} color={T.inputIcon} />
+                      </View>
+                    ) : (
+                      <Text
+                        style={[styles.soonText, { color: T.inputPlaceholder }]}
+                      >
+                        Soon
+                      </Text>
+                    )}
                   </TouchableOpacity>
 
                   {!isLast && (
@@ -310,7 +275,6 @@ export default function HymnDetailScreen() {
           </View>
         )}
 
-        {/* Space for MiniPlayer + tab bar */}
         <View style={{ height: 160 }} />
       </ScrollView>
     </View>
@@ -379,52 +343,44 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     overflow: "hidden",
-    paddingLeft: 44,
+    backgroundColor: "transparent",
   },
-  timeline: {
-    position: "absolute",
-    left: 20,
-    top: 28,
-    bottom: 28,
-    width: 2,
+
+  // ── Voice row — playlist list style ──────────────────────────────────────
+  voiceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
   },
-  timelineDot: {
-    position: "absolute",
-    left: -31,
-    top: 18,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-  },
-  voiceRow: { paddingVertical: 14, paddingRight: 16 },
-  voiceContent: { flexDirection: "row", alignItems: "center", gap: 12 },
   voiceIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.secondary,
   },
-  voiceName: { fontSize: FontSizes.sm, fontWeight: "600", marginBottom: 2 },
+  voiceName: { fontSize: FontSizes.sm, fontWeight: "700", marginBottom: 2 },
   nowPlayingTag: { fontSize: FontSizes.xs, fontWeight: "500" },
   activePill: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
   },
   playPill: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   soonText: { fontSize: FontSizes.xs, fontWeight: "600" },
-  rowDivider: { height: 1, marginLeft: 0 },
+  rowDivider: { height: 1 },
 
   // ── Related ───────────────────────────────────────────────────────────────
   relatedSection: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.xl },
