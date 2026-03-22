@@ -60,12 +60,6 @@
         "projectId": "05dacea4-39ee-4602-ac92-d80d56202ab1"
       },
       "router": {}
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/05dacea4-39ee-4602-ac92-d80d56202ab1"
     }
   }
 }
