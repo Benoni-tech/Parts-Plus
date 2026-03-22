@@ -47,10 +47,7 @@ app-example
 /ios
 /android
 
-# Firebase & Sensitive Configuration Files
-src/config/firebase.ts
-firebase.ts
-firebaseConfig.ts
+# Firebase sensitive files — config file is safe to commit (uses env vars)
 google-services.json
 GoogleService-Info.plist
 

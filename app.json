@@ -15,10 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.company.partsplus"
+      "bundleIdentifier": "com.partsplus.app"
     },
     "android": {
-      "package": "com.company.partsplus",
+      "package": "com.partsplus.app",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFD700",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -54,17 +56,10 @@
       "reactCompiler": false
     },
     "extra": {
-      "firebase": {
-        "apiKey": "AIzaSyCQYIJP-Q5G3aeRtMSVXpAf_8_HRSEN5Wo",
-        "authDomain": "parts-plus-8dd3f.firebaseapp.com",
-        "projectId": "parts-plus-8dd3f",
-        "storageBucket": "parts-plus-8dd3f.firebasestorage.app",
-        "messagingSenderId": "1016604643982",
-        "appId": "1:1016604643982:web:0e224c63845d7645b52fdf"
-      },
       "eas": {
-        "projectId": "parts-plus-8dd3f"
-      }
+        "projectId": "05dacea4-39ee-4602-ac92-d80d56202ab1"
+      },
+      "router": {}
     }
   }
 }
