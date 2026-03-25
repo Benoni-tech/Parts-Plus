@@ -8,9 +8,7 @@ module.exports = {
     scheme: "partsplus",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
-    splash: {
-      backgroundColor: "#ffffff",
-    },
+    splash: {},
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.partsplus.app",
@@ -40,8 +38,13 @@ module.exports = {
       [
         "expo-splash-screen",
         {
+          image: "./assets/images/logo.png",
+          imageWidth: 200,
+          resizeMode: "contain",
           backgroundColor: "#ffffff",
           dark: {
+            image: "./assets/images/logo.png",
+            imageWidth: 200,
             backgroundColor: "#0a0a0a",
           },
         },
