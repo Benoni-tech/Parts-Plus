@@ -1,6 +1,5 @@
-// app/_layout.tsx
-
 import { Slot, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { PlayerProvider, usePlayer } from "../src/Contexts/PlayerContext";
@@ -9,16 +8,14 @@ import FullScreenPlayer from "../src/components/player/FullScreenPlayer";
 import MiniPlayer from "../src/components/player/MiniPlayer";
 import { useAuth } from "../src/hooks/useAuth";
 
-// ─── Global font scale cap ────────────────────────────────────────────────────
-// Prevents system-level font size (accessibility settings) from breaking layouts.
-// 1.2 = allows up to 20% scaling above base — respects accessibility without
-// destroying UI. Applied once here, affects every Text and TextInput in the app.
+// Prevent Expo splash from auto-hiding so we can hide it immediately
+SplashScreen.preventAutoHideAsync();
+
 (Text as any).defaultProps = (Text as any).defaultProps || {};
 (Text as any).defaultProps.maxFontSizeMultiplier = 1.2;
 
 (TextInput as any).defaultProps = (TextInput as any).defaultProps || {};
 (TextInput as any).defaultProps.maxFontSizeMultiplier = 1.2;
-// ─────────────────────────────────────────────────────────────────────────────
 
 function RootLayoutNav() {
   const { user, loading, initialized } = useAuth();
@@ -28,7 +25,15 @@ function RootLayoutNav() {
   const [splashDone, setSplashDone] = useState(false);
   const prevUserRef = useRef<string | null | undefined>(undefined);
 
-  // 4 second splash gate
+  // Hide Expo splash screen immediately (within milliseconds)
+  useEffect(() => {
+    const hideExpoSplash = async () => {
+      await SplashScreen.hideAsync();
+    };
+    hideExpoSplash();
+  }, []);
+
+  // 4 second splash gate for your custom splash screen
   useEffect(() => {
     const timer = setTimeout(() => setSplashDone(true), 4000);
     return () => clearTimeout(timer);

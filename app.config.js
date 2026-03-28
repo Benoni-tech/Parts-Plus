@@ -4,7 +4,7 @@ module.exports = {
     slug: "parts-plus",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/logo.png",
+    icon: "./assets/images/logo-with-white-bg.png", // Create this - black logo on white background
     scheme: "partsplus",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -21,9 +21,9 @@ module.exports = {
       enableProguardInReleaseBuilds: true,
       enableShrinkResourcesInReleaseBuilds: true,
       adaptiveIcon: {
-        backgroundColor: "#FFD700",
-        foregroundImage: "./assets/images/logo.png",
-        backgroundImage: "./assets/images/logo.png",
+        backgroundColor: "#FFFFFF", // White background so black logo is visible
+        foregroundImage: "./assets/images/logo.png", // Your black logo
+        // Removed backgroundImage - this was causing the problem
         monochromeImage: "./assets/images/logo.png",
       },
       edgeToEdgeEnabled: true,
@@ -38,15 +38,7 @@ module.exports = {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/logo.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: {
-            image: "./assets/images/logo.png",
-            imageWidth: 200,
-            backgroundColor: "#0a0a0a",
-          },
+          backgroundColor: "transparent",
         },
       ],
       "expo-font",
