@@ -1,6 +1,6 @@
 import { Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { PlayerProvider, usePlayer } from "../src/Contexts/PlayerContext";
 import { AuthProvider } from "../src/Contexts/authContexts";
@@ -8,7 +8,6 @@ import FullScreenPlayer from "../src/components/player/FullScreenPlayer";
 import MiniPlayer from "../src/components/player/MiniPlayer";
 import { useAuth } from "../src/hooks/useAuth";
 
-// Prevent Expo splash from auto-hiding so we can hide it immediately
 SplashScreen.preventAutoHideAsync();
 
 (Text as any).defaultProps = (Text as any).defaultProps || {};
@@ -22,22 +21,17 @@ function RootLayoutNav() {
   const { stop } = usePlayer();
   const segments = useSegments() as string[];
   const router = useRouter();
-  const [splashDone, setSplashDone] = useState(false);
   const prevUserRef = useRef<string | null | undefined>(undefined);
 
-  // Hide Expo splash screen immediately (within milliseconds)
+  // Hide splash screen once auth is initialized and loading is done
   useEffect(() => {
-    const hideExpoSplash = async () => {
-      await SplashScreen.hideAsync();
+    const hideSplash = async () => {
+      if (initialized && !loading) {
+        await SplashScreen.hideAsync();
+      }
     };
-    hideExpoSplash();
-  }, []);
-
-  // 4 second splash gate for your custom splash screen
-  useEffect(() => {
-    const timer = setTimeout(() => setSplashDone(true), 4000);
-    return () => clearTimeout(timer);
-  }, []);
+    hideSplash();
+  }, [initialized, loading]);
 
   // Stop player whenever user logs out (handles both manual and automatic sign-out)
   useEffect(() => {
@@ -51,9 +45,10 @@ function RootLayoutNav() {
     prevUserRef.current = user?.uid ?? null;
   }, [user, initialized]);
 
-  // Navigation guard
+  // Navigation guard - this replaces the custom splash screen logic
   useEffect(() => {
-    if (!initialized || loading || !splashDone) return;
+    // Don't navigate until auth is initialized and splash is ready
+    if (!initialized || loading) return;
 
     const inAuthGroup = segments[0] === "auth";
     const inTabsGroup = segments[0] === "(tabs)";
@@ -71,12 +66,15 @@ function RootLayoutNav() {
     }
 
     if (!user) {
+      // Not signed in - go to welcome or auth
       if (!inWelcome && !inAuthGroup) {
         if (__DEV__) console.log("📍 Navigating to welcome (no user)");
         router.replace("/welcome");
       }
     } else {
+      // Signed in
       if (user.emailVerified) {
+        // Verified user - go to main app
         const onVerificationSuccess =
           inAuthGroup && segments[1] === "verification-success";
         if (!inTabsGroup && !inHymnDetail && !onVerificationSuccess) {
@@ -84,6 +82,7 @@ function RootLayoutNav() {
           router.replace("/(tabs)" as any);
         }
       } else {
+        // Unverified user - go to verify email
         const onVerifyEmail = inAuthGroup && segments[1] === "verify-email";
         const onVerifySuccess =
           inAuthGroup && segments[1] === "verification-success";
@@ -94,7 +93,7 @@ function RootLayoutNav() {
         }
       }
     }
-  }, [user, user?.emailVerified, segments, initialized, loading, splashDone]);
+  }, [user, user?.emailVerified, segments, initialized, loading, router]);
 
   return (
     <View style={styles.root}>

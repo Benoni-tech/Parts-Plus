@@ -4,7 +4,7 @@ module.exports = {
     slug: "parts-plus",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/logo.png",
+    icon: "./assets/images/ios icon.png", // Default icon
     scheme: "partsplus",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -12,6 +12,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.partsplus.app",
+      icon: "./assets/images/ios icon.png", // iOS uses same logo
     },
     android: {
       package: "com.partsplus.app",
@@ -22,23 +23,29 @@ module.exports = {
       enableShrinkResourcesInReleaseBuilds: true,
       adaptiveIcon: {
         backgroundColor: "#FFFFFF",
-        foregroundImage: "./assets/images/logo.png",
-        monochromeImage: "./assets/images/logo.png",
+        foregroundImage: "./assets/images/ios icon.png", // Android uses same logo with white background
+        monochromeImage: "./assets/images/ios icon.png",
       },
-      // edgeToEdgeEnabled: true, // COMMENT THIS OUT - causing resource conflicts
       predictiveBackGestureEnabled: false,
     },
     web: {
       output: "static",
-      favicon: "./assets/images/logo.png",
+      favicon: "./assets/images/ios icon.png",
     },
     plugins: [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          backgroundColor: "transparent",
-          // No image to avoid missing resource error
+          image: "./assets/images/main logo.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#FFFFFF",
+          dark: {
+            image: "./assets/images/main logo.png",
+            imageWidth: 200,
+            backgroundColor: "#ffffff",
+          },
         },
       ],
       "expo-font",
