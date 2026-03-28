@@ -4,7 +4,7 @@ module.exports = {
     slug: "parts-plus",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/logo-with-white-bg.png", // Create this - black logo on white background
+    icon: "./assets/images/logo.png",
     scheme: "partsplus",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -21,12 +21,11 @@ module.exports = {
       enableProguardInReleaseBuilds: true,
       enableShrinkResourcesInReleaseBuilds: true,
       adaptiveIcon: {
-        backgroundColor: "#FFFFFF", // White background so black logo is visible
-        foregroundImage: "./assets/images/logo.png", // Your black logo
-        // Removed backgroundImage - this was causing the problem
+        backgroundColor: "#FFFFFF",
+        foregroundImage: "./assets/images/logo.png",
         monochromeImage: "./assets/images/logo.png",
       },
-      edgeToEdgeEnabled: true,
+      // edgeToEdgeEnabled: true, // COMMENT THIS OUT - causing resource conflicts
       predictiveBackGestureEnabled: false,
     },
     web: {
@@ -39,6 +38,7 @@ module.exports = {
         "expo-splash-screen",
         {
           backgroundColor: "transparent",
+          // No image to avoid missing resource error
         },
       ],
       "expo-font",
