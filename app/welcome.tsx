@@ -11,7 +11,7 @@ import {
   Text,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
@@ -28,9 +28,9 @@ const CIRCLE_SIZE = width * 0.72;
 const CIRCLE_RADIUS = CIRCLE_SIZE / 2;
 const ARC_STROKE = 2.5;
 // SVG circumference for the arc ring
-const ARC_CIRCUMFERENCE = 2 * Math.PI * (CIRCLE_RADIUS - ARC_STROKE / 2 - 4);
+const ARC_CIRCUMFERENCE = 2 * Math.PI * (CIRCLE_RADIUS + 8);
 
-// ─── Grid background ──────────────────────────────────────────────────────────
+//  Grid background
 function GridBackground({ isDark }: { isDark: boolean }) {
   const cols = 14;
   const rows = 22;
@@ -76,60 +76,19 @@ function GridBackground({ isDark }: { isDark: boolean }) {
   );
 }
 
-// ─── Floating badge ───────────────────────────────────────────────────────────
-function FloatingBadge({
-  label,
-  sublabel,
-  style,
-  isDark,
-}: {
-  label: string;
-  sublabel: string;
-  style?: any;
-  isDark: boolean;
-}) {
-  return (
-    <View
-      style={[
-        styles.floatingBadge,
-        {
-          backgroundColor: isDark
-            ? "rgba(255,255,255,0.10)"
-            : "rgba(24,47,72,0.08)",
-          borderColor: isDark
-            ? "rgba(255,255,255,0.18)"
-            : "rgba(24,47,72,0.14)",
-        },
-        style,
-      ]}
-    >
-      <Text style={[styles.floatingBadgeLabel, { color: Colors.secondary }]}>
-        {label}
-      </Text>
-      <Text
-        style={[
-          styles.floatingBadgeSub,
-          { color: isDark ? "rgba(255,255,255,0.55)" : "rgba(24,47,72,0.55)" },
-        ]}
-      >
-        {sublabel}
-      </Text>
-    </View>
-  );
-}
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
+//  Screen
 export default function WelcomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const T = isDark ? AuthTheme.dark : AuthTheme.light;
 
-  // ── Entrance animations ───────────────────────────────────────────────────
+  //  Entrance animations
   const heroAnim = useRef(new Animated.Value(0)).current;
   const textAnim = useRef(new Animated.Value(0)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
   const arcAnim = useRef(new Animated.Value(0)).current;
+  const logoAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.stagger(140, [
@@ -140,6 +99,12 @@ export default function WelcomeScreen() {
         useNativeDriver: true,
       }),
       Animated.spring(arcAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 10,
+        useNativeDriver: true,
+      }),
+      Animated.spring(logoAnim, {
         toValue: 1,
         tension: 50,
         friction: 10,
@@ -172,7 +137,7 @@ export default function WelcomeScreen() {
     ],
   });
 
-  // ── Circle colours ────────────────────────────────────────────────────────
+  // Circle colours
   const circleOuterBg = isDark
     ? "rgba(255,255,255,0.06)"
     : "rgba(24,47,72,0.06)";
@@ -197,7 +162,7 @@ export default function WelcomeScreen() {
       <StatusBar style={T.statusBar} />
       <GridBackground isDark={isDark} />
 
-      {/* ── Hero zone ────────────────────────────────────────────────── */}
+      {/* Hero zone */}
       <Animated.View style={[styles.heroZone, makeAnim(heroAnim, 30)]}>
         {/* Arc ring — sits behind the circle */}
         <Animated.View style={[styles.arcWrapper, makeAnim(arcAnim, 0)]}>
@@ -226,8 +191,6 @@ export default function WelcomeScreen() {
               strokeDasharray={`${arcDash} ${arcGap}`}
               strokeDashoffset={ARC_CIRCUMFERENCE * 0.12}
               strokeLinecap="round"
-              rotation="-90"
-              origin={`${(CIRCLE_SIZE + 24) / 2}, ${(CIRCLE_SIZE + 24) / 2}`}
             />
           </Svg>
         </Animated.View>
@@ -277,58 +240,23 @@ export default function WelcomeScreen() {
             </View>
           </View>
         </View>
-
-        {/* Floating badges */}
-        <FloatingBadge
-          label="4.9 ★"
-          sublabel="Top Rated"
-          isDark={isDark}
-          style={styles.badgeLeft}
-        />
-        <FloatingBadge
-          label="10K+"
-          sublabel="Hymns"
-          isDark={isDark}
-          style={styles.badgeRight}
-        />
-
-        {/* App name pill */}
-        <View
-          style={[
-            styles.appPill,
-            {
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.10)"
-                : "rgba(24,47,72,0.08)",
-              borderColor: isDark
-                ? "rgba(255,255,255,0.18)"
-                : "rgba(24,47,72,0.14)",
-            },
-          ]}
-        >
-          <Ionicons
-            name="musical-notes"
-            size={13}
-            color={Colors.secondary}
-            style={{ marginRight: 5 }}
-          />
-          <Text
-            style={[
-              styles.appPillText,
-              { color: isDark ? "#ffffff" : Colors.primary },
-            ]}
-          >
-            Parts Plus
-          </Text>
-        </View>
       </Animated.View>
 
-      {/* ── Bottom content ────────────────────────────────────────────── */}
+      {/* Main Logo Section 
+      <Animated.View style={[styles.logoSection, makeAnim(logoAnim, 20)]}>
+        <Image
+          source={require("@/assets/images/android icon.png")}
+          style={styles.mainLogo}
+          resizeMode="contain"
+        />
+      </Animated.View>*/}
+
+      {/*  Bottom content  */}
       <View style={styles.bottomZone}>
         {/* Headline */}
         <Animated.View style={makeAnim(textAnim, 22)}>
           <Text style={[styles.headline, { color: T.textPrimary }]}>
-            Stream your{"\n"}favourite hymns.
+            Stream your{"\n"} music in parts.
           </Text>
           <Text style={[styles.subtext, { color: T.textSecondary }]}>
             Practice every voice part of your favourite{"\n"}hymns and choruses,
@@ -375,18 +303,17 @@ const styles = StyleSheet.create({
     paddingBottom: height * 0.1,
   },
 
-  // ── Hero ──────────────────────────────────────────────────────────────────
+  // Hero
   heroZone: {
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: height * 0.1,
-    paddingBottom: Spacing.xl,
+    paddingTop: height * 0.08,
   },
   arcWrapper: {
     position: "absolute",
     width: CIRCLE_SIZE + 24,
-    height: CIRCLE_SIZE + 24,
+    height: CIRCLE_SIZE - 30,
     alignSelf: "center",
   },
   circleOuter: {
@@ -411,51 +338,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // ── Floating badges ───────────────────────────────────────────────────────
-  floatingBadge: {
-    position: "absolute",
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  // Main Logo Section
+  logoSection: {
+    width: "100%",
     alignItems: "center",
-    minWidth: 72,
+    justifyContent: "center",
+    marginVertical: Spacing.xl,
+    marginBottom: Spacing.md - 5,
   },
-  floatingBadgeLabel: {
-    fontSize: FontSizes.sm,
-    fontWeight: "800",
-  },
-  floatingBadgeSub: {
-    fontSize: FontSizes.xs - 1,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  badgeLeft: {
-    left: width * 0.04,
-    top: "35%",
-  },
-  badgeRight: {
-    right: width * 0.04,
-    top: "45%",
+  mainLogo: {
+    width: width * 0.65,
+    height: width * 0.65 * 0.5,
+    maxHeight: 130,
   },
 
-  // ── App name pill ─────────────────────────────────────────────────────────
-  appPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    marginTop: Spacing.lg,
-  },
-  appPillText: {
-    fontSize: FontSizes.xs,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-
-  // ── Bottom ────────────────────────────────────────────────────────────────
+  // Bottom
   bottomZone: {
     width: "100%",
     paddingHorizontal: Spacing.xl,
